@@ -95,8 +95,56 @@ int main(void)
     MX_USART2_UART_Init();
     /* USER CODE BEGIN 2 */
 
-    SensorIMU_Init();
-    FlightControl_Init();
+    LSM6DSO32_Handle_t lsm6dso32 = {
+        .hspi = &hspi2,
+        .csPort = CS_LSM6DSO32_GPIO_Port,
+        .csPin = CS_LSM6DSO32_Pin,
+    };
+
+    // LIS2MDL_Handle_t lis2mdl = {
+    //     .hspi = &hspi2,
+    //     .csPort = CS_LIS2MDL_GPIO_Port,
+    //     .csPin = CS_LIS2MDL_Pin,
+    // };
+
+    // if (LIS2MDL_Init(&lis2mdl))
+    // {
+    //     while (1)
+    //     {
+    //         // 3 flash
+    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //         HAL_Delay(100);
+    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+    //         HAL_Delay(200);
+
+    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //         HAL_Delay(100);
+    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+    //         HAL_Delay(200);
+
+    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //         HAL_Delay(100);
+    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+    //         HAL_Delay(1000);
+    //     }
+    // };
+
+    while (LSM6DSO32_Init(&lsm6dso32))
+    {
+        // 2 flash
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        HAL_Delay(100);
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        HAL_Delay(200);
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        HAL_Delay(100);
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+        HAL_Delay(1000);
+    };
 
     /* USER CODE END 2 */
 
@@ -104,13 +152,6 @@ int main(void)
     /* USER CODE BEGIN WHILE */
     while (1)
     {
-
-        SensorData_t sensorData;
-        if (SensorIMU_ReadData(&sensorData) == 0)
-        {
-            // pass data to flight control
-            FlightControl_Update(&sensorData);
-        }
 
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
@@ -192,8 +233,8 @@ static void MX_SPI2_Init(void)
     hspi2.Init.Mode = SPI_MODE_MASTER;
     hspi2.Init.Direction = SPI_DIRECTION_2LINES;
     hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-    hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
-    hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
+    hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+    hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
     hspi2.Init.NSS = SPI_NSS_SOFT;
     hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
     hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
@@ -259,16 +300,23 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, CS_LSM6DSO32_Pin | LD2_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(SPI2_CS_GPIO_Port, SPI2_CS_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(CS_LIS2MDL_GPIO_Port, CS_LIS2MDL_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin : B1_Pin */
     GPIO_InitStruct.Pin = B1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : CS_LSM6DSO32_Pin */
+    GPIO_InitStruct.Pin = CS_LSM6DSO32_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(CS_LSM6DSO32_GPIO_Port, &GPIO_InitStruct);
 
     /*Configure GPIO pin : LD2_Pin */
     GPIO_InitStruct.Pin = LD2_Pin;
@@ -277,12 +325,12 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : SPI2_CS_Pin */
-    GPIO_InitStruct.Pin = SPI2_CS_Pin;
+    /*Configure GPIO pin : CS_LIS2MDL_Pin */
+    GPIO_InitStruct.Pin = CS_LIS2MDL_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(SPI2_CS_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(CS_LIS2MDL_GPIO_Port, &GPIO_InitStruct);
 
     /* USER CODE BEGIN MX_GPIO_Init_2 */
     /* USER CODE END MX_GPIO_Init_2 */

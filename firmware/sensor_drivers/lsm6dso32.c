@@ -109,7 +109,7 @@ int LSM6DSO32_Init(LSM6DSO32_Handle_t *dev)
     uint8_t ctrl1_xl = 0;
     // bits[7:4] = ODR, bits[3:2] = FS (range), bits[1:0]=BW
     // This is just an example, you can map dev->config.accelOdr, etc.
-    ctrl1_xl = 0x40; // dummy
+    ctrl1_xl = 0x48; // 1.66 Khz && 8g accekleration
 
     if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL1_XL, &ctrl1_xl, 1) != 0)
     {
@@ -118,7 +118,7 @@ int LSM6DSO32_Init(LSM6DSO32_Handle_t *dev)
 
     // 3) Configure gyroscope in CTRL2_G if needed
     uint8_t ctrl2_g = 0;
-    ctrl2_g = 0x40; // e.g., ODR=1.66kHz, ±2000 dps
+    ctrl2_g = 0x4c; // e.g., ODR=1.66kHz, ±2000 dps
     if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL2_G, &ctrl2_g, 1) != 0)
     {
         return -5;
@@ -149,5 +149,24 @@ int LSM6DSO32_ReadAccelRaw(LSM6DSO32_Handle_t *dev, LSM6DSO32_AccelRaw_t *accel)
     accel->y = (int16_t)((rawData[3] << 8) | rawData[2]);
     accel->z = (int16_t)((rawData[5] << 8) | rawData[4]);
 
+    return 0;
+}
+
+int LSM6DS032_WhoIAm(LSM6DSO32_Handle_t *dev)
+{
+    if (!dev)
+    {
+        return -1;
+    }
+
+    uint8_t whoAmI = 0;
+    if (LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_WHO_AM_I, &whoAmI, 1))
+    {
+        return -2;
+    }
+    if (whoAmI != LSM6DSO32_WHO_AM_I_VAL)
+    {
+        return -3;
+    }
     return 0;
 }
