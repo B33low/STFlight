@@ -137,11 +137,20 @@ int LSM6DSO32_ReadAccelRaw(LSM6DSO32_Handle_t *dev, LSM6DSO32_AccelRaw_t *accel)
     }
 
     uint8_t rawData[6] = {0};
-
-    // read 6 bytes from OUTX_L_A
-    if (LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_OUTX_L_A, rawData, 6) != 0)
+    uint8_t addrToRead[6] = {LSM6DSO32_REG_OUTX_L_A,
+                             LSM6DSO32_REG_OUTX_H_A,
+                             LSM6DSO32_REG_OUTY_L_A,
+                             LSM6DSO32_REG_OUTY_H_A,
+                             LSM6DSO32_REG_OUTZ_L_A,
+                             LSM6DSO32_REG_OUTZ_H_A};
+    for (uint8_t i = 0; i < 6; i++)
     {
-        return -2;
+        uint8_t received;
+        if (LSM6DSO32_ReadReg(dev, addrToRead[i], &received, 1) != 0)
+        {
+            return -2;
+        }
+        rawData[i] = received;
     }
 
     // combine LSB/MSB for each axis

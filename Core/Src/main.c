@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -150,16 +151,33 @@ int main(void)
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
+    LSM6DSO32_AccelRaw_t accel;
+    int lastResult = 0;
+    char buffer[50];
     while (1)
     {
 
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
-        HAL_Delay(100);
+        HAL_Delay(10);
 
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
-        HAL_Delay(1000);
+        lastResult = LSM6DSO32_ReadAccelRaw(&lsm6dso32, &accel);
+        int len = snprintf(buffer, sizeof(buffer), "x: %d, y: %d, z: %d\r\n", accel.x, accel.y, accel.z);
+        HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, 1000);
+        if (lastResult != 0)
+        {
+            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        }
+        HAL_Delay(100);
+
+        // HAL_Delay(1000);
+
+        if (lastResult != 0)
+        {
+            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        }
 
         /* USER CODE END WHILE */
 

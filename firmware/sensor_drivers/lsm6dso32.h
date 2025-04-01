@@ -16,7 +16,15 @@ extern "C"
 #define LSM6DSO32_REG_WHO_AM_I 0x0F
 #define LSM6DSO32_REG_CTRL1_XL 0x10
 #define LSM6DSO32_REG_CTRL2_G 0x11
+
 #define LSM6DSO32_REG_OUTX_L_A 0x28 // first accel data register
+#define LSM6DSO32_REG_OUTX_H_A 0x29
+
+#define LSM6DSO32_REG_OUTY_L_A 0x2A
+#define LSM6DSO32_REG_OUTY_H_A 0x2B
+
+#define LSM6DSO32_REG_OUTZ_L_A 0x2C
+#define LSM6DSO32_REG_OUTZ_H_A 0x2D
 
 #define LSM6DSO32_WHO_AM_I_VAL 0x6C // expected WHO_AM_I value for LSM6DSO32
 
@@ -45,9 +53,9 @@ extern "C"
 
     typedef struct
     {
-        uint8_t x;
-        uint8_t y;
-        uint8_t z;
+        int16_t x;
+        int16_t y;
+        int16_t z;
     } LSM6DSO32_AccelRaw_t;
 
     /*----------------------------------------------------------------------------*/
