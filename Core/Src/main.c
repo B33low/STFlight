@@ -96,17 +96,17 @@ int main(void)
     MX_USART2_UART_Init();
     /* USER CODE BEGIN 2 */
 
-    LSM6DSO32_Handle_t lsm6dso32 = {
-        .hspi = &hspi2,
-        .csPort = CS_LSM6DSO32_GPIO_Port,
-        .csPin = CS_LSM6DSO32_Pin,
-    };
-
-    // LIS2MDL_Handle_t lis2mdl = {
+    // LSM6DSO32_Handle_t lsm6dso32 = {
     //     .hspi = &hspi2,
-    //     .csPort = CS_LIS2MDL_GPIO_Port,
-    //     .csPin = CS_LIS2MDL_Pin,
+    //     .csPort = CS_LSM6DSO32_GPIO_Port,
+    //     .csPin = CS_LSM6DSO32_Pin,
     // };
+
+    LIS2MDL_Handle_t lis2mdl = {
+        .hspi = &hspi2,
+        .csPort = CS_LIS2MDL_GPIO_Port,
+        .csPin = CS_LIS2MDL_Pin,
+    };
 
     // if (LIS2MDL_Init(&lis2mdl))
     // {
@@ -133,7 +133,21 @@ int main(void)
     //     }
     // };
 
-    while (LSM6DSO32_Init(&lsm6dso32))
+    // while (LSM6DSO32_Init(&lsm6dso32))
+    // {
+    //     // 2 flash
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //     HAL_Delay(100);
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //     HAL_Delay(200);
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //     HAL_Delay(100);
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+    //     HAL_Delay(1000);
+    // };
+
+    while (LIS2MDL_Init(&lis2mdl))
     {
         // 2 flash
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -151,7 +165,7 @@ int main(void)
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
-    LSM6DSO32_AccelRaw_t accel;
+    LIS2MDL_Mag_Raw mag;
     int lastResult = 0;
     char buffer[50];
     while (1)
@@ -163,14 +177,16 @@ int main(void)
 
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
-        lastResult = LSM6DSO32_ReadAccelRaw(&lsm6dso32, &accel);
-        int len = snprintf(buffer, sizeof(buffer), "x: %d, y: %d, z: %d\r\n", accel.x, accel.y, accel.z);
+        // lastResult = LSM6DSO32_ReadAccelRaw(&lsm6dso32, &accel);
+        lastResult = LIS2MDL_ReadMagneticRaw(&lis2mdl, &mag);
+        int len = snprintf(buffer, sizeof(buffer), "x: %d, y: %d, z: %d\r\n", mag.x, mag.y, mag.z);
         HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, 1000);
         if (lastResult != 0)
         {
             HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+            HAL_Delay(1000);
         }
-        HAL_Delay(100);
+        // HAL_Delay(100);
 
         // HAL_Delay(1000);
 

@@ -54,9 +54,9 @@ def animate(i):
             raw_s = raw_data[-1].replace('\r\n', '').split(',')
             # print(raw_s)
             # Parse the x, y, z values from the received data
-            x = int(raw_s[0][3:])/4200
-            y = int(raw_s[1][4:])/4200
-            z = int(raw_s[2][4:])/4200
+            x = int(raw_s[0][3:])/250
+            y = int(raw_s[1][4:])/250
+            z = int(raw_s[2][4:])/250
             # print(x, y, z)
 
             # Update the x, y, and z line data

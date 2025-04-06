@@ -32,7 +32,7 @@ int LIS2MDL_ReadReg(LIS2MDL_Handle_t *dev, uint8_t reg, uint8_t *data, uint16_t 
     }
 
     // LIS2MDL SPI read protocol: set MSB = 1 for read
-    uint8_t addr = (reg << 1) | 0x01;
+    uint8_t addr = reg | 1 << 7;
 
     LIS2MDL_Select(dev, true);
 
@@ -62,7 +62,7 @@ int LIS2MDL_WriteReg(LIS2MDL_Handle_t *dev, uint8_t reg, const uint8_t *data, ui
     }
 
     // LSM6DSO32 SPI write protocol: MSB = 0
-    uint8_t addr = (reg << 1) & 0xFE;
+    uint8_t addr = reg;
 
     LIS2MDL_Select(dev, true);
 
@@ -91,7 +91,25 @@ int LIS2MDL_Init(LIS2MDL_Handle_t *dev)
         return -1;
     }
 
-    LIS2MDL_Enable4WireMode(dev);
+    // LIS2MDL_Enable4WireMode(dev);
+
+    uint8_t reg_val = 1 << 7 | 1 << 3 | 1 << 2; // Set Temp Com, 50Hz Measure amd continuous mode
+    if (LIS2MDL_WriteReg(dev, LIS2MDL_CFG_REG_A, &reg_val, 1) != 0)
+    {
+        return -2;
+    }
+
+    reg_val = 1 << 0; // LPF (BW = 25Hz)
+    if (LIS2MDL_WriteReg(dev, LIS2MDL_CFG_REG_B, &reg_val, 1) != 0)
+    {
+        return -3;
+    }
+
+    reg_val = 1 << 4 | 1 << 2; // Set BDU, 4WSPI
+    if (LIS2MDL_WriteReg(dev, LIS2MDL_CFG_REG_C, &reg_val, 1) != 0)
+    {
+        return -3;
+    }
 
     // 1) Check WHO_AM_I
     uint8_t whoAmI = 0;
@@ -134,5 +152,37 @@ int LIS2MDL_Enable4WireMode(LIS2MDL_Handle_t *dev)
     {
         return -2;
     }
+    return 0;
+}
+
+int LIS2MDL_ReadMagneticRaw(LIS2MDL_Handle_t *dev, LIS2MDL_Mag_Raw *mag)
+{
+    if (!dev || !mag)
+    {
+        return -1;
+    }
+
+    uint8_t rawData[6] = {0};
+    uint8_t addrToRead[6] = {LIS2MDL_REG_OUTX_L,
+                             LIS2MDL_REG_OUTX_H,
+                             LIS2MDL_REG_OUTY_L,
+                             LIS2MDL_REG_OUTY_H,
+                             LIS2MDL_REG_OUTZ_L,
+                             LIS2MDL_REG_OUTZ_H};
+    for (uint8_t i = 0; i < 6; i++)
+    {
+        uint8_t received;
+        if (LIS2MDL_ReadReg(dev, addrToRead[i], &received, 1) != 0)
+        {
+            return -2;
+        }
+        rawData[i] = received;
+    }
+
+    // combine LSB/MSB for each axis
+    mag->x = (int16_t)((rawData[1] << 8) | rawData[0]);
+    mag->y = (int16_t)((rawData[3] << 8) | rawData[2]);
+    mag->z = (int16_t)((rawData[5] << 8) | rawData[4]);
+
     return 0;
 }
