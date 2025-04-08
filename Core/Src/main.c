@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include <stdio.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -334,7 +333,7 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, CS_LSM6DSO32_Pin | LD2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, CS_LPS22HB_Pin | CS_LSM6DSO32_Pin | LD2_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(CS_LIS2MDL_GPIO_Port, CS_LIS2MDL_Pin, GPIO_PIN_RESET);
@@ -345,12 +344,12 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : CS_LSM6DSO32_Pin */
-    GPIO_InitStruct.Pin = CS_LSM6DSO32_Pin;
+    /*Configure GPIO pins : CS_LPS22HB_Pin CS_LSM6DSO32_Pin */
+    GPIO_InitStruct.Pin = CS_LPS22HB_Pin | CS_LSM6DSO32_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(CS_LSM6DSO32_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /*Configure GPIO pin : LD2_Pin */
     GPIO_InitStruct.Pin = LD2_Pin;

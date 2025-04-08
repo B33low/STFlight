@@ -54,6 +54,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     firmware/sensor_drivers/sensor_imu.c
     firmware/sensor_drivers/lsm6dso32.c
     firmware/sensor_drivers/lis2mdl.c
+    firmware/sensor_drivers/lps22hb.c
 )
 
 # Add include paths

@@ -23,7 +23,8 @@
 #define __MAIN_H
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -33,25 +34,26 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include "lsm6dso32.h"
 #include "lis2mdl.h"
-/* USER CODE END Includes */
+#include "lps22hb.h"
+    /* USER CODE END Includes */
 
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
+    /* Exported types ------------------------------------------------------------*/
+    /* USER CODE BEGIN ET */
 
-/* USER CODE END ET */
+    /* USER CODE END ET */
 
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
+    /* Exported constants --------------------------------------------------------*/
+    /* USER CODE BEGIN EC */
 
-/* USER CODE END EC */
+    /* USER CODE END EC */
 
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
+    /* Exported macro ------------------------------------------------------------*/
+    /* USER CODE BEGIN EM */
 
-/* USER CODE END EM */
+    /* USER CODE END EM */
 
-/* Exported functions prototypes ---------------------------------------------*/
-void Error_Handler(void);
+    /* Exported functions prototypes ---------------------------------------------*/
+    void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
@@ -60,6 +62,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define CS_LPS22HB_Pin GPIO_PIN_1
+#define CS_LPS22HB_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
@@ -77,9 +81,9 @@ void Error_Handler(void);
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 
-/* USER CODE BEGIN Private defines */
+    /* USER CODE BEGIN Private defines */
 
-/* USER CODE END Private defines */
+    /* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }

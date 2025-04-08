@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.env": "properties",
+        "type_traits": "c",
+        "utility": "c",
+        "limits": "c"
+    }
+}
