@@ -35,6 +35,7 @@ extern "C"
 #include "lsm6dso32.h"
 #include "lis2mdl.h"
 #include "lps22hb.h"
+#include <math.h>
     /* USER CODE END Includes */
 
     /* Exported types ------------------------------------------------------------*/
@@ -62,18 +63,18 @@ extern "C"
 /* Private defines -----------------------------------------------------------*/
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
-#define CS_LPS22HB_Pin GPIO_PIN_1
-#define CS_LPS22HB_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define CS_LSM6DSO32_Pin GPIO_PIN_4
-#define CS_LSM6DSO32_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
 #define CS_LIS2MDL_Pin GPIO_PIN_0
 #define CS_LIS2MDL_GPIO_Port GPIOB
+#define CS_LSM6DSO32_Pin GPIO_PIN_14
+#define CS_LSM6DSO32_GPIO_Port GPIOB
+#define CS_LPS22HB_Pin GPIO_PIN_15
+#define CS_LPS22HB_GPIO_Port GPIOB
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14

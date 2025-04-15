@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +40,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 SPI_HandleTypeDef hspi2;
 
 UART_HandleTypeDef huart2;
@@ -53,6 +55,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -93,6 +96,7 @@ int main(void)
     MX_GPIO_Init();
     MX_SPI2_Init();
     MX_USART2_UART_Init();
+    MX_I2C1_Init();
     /* USER CODE BEGIN 2 */
 
     // LSM6DSO32_Handle_t lsm6dso32 = {
@@ -101,12 +105,16 @@ int main(void)
     //     .csPin = CS_LSM6DSO32_Pin,
     // };
 
-    LIS2MDL_Handle_t lis2mdl = {
+    // LIS2MDL_Handle_t lis2mdl = {
+    //     .hspi = &hspi2,
+    //     .csPort = CS_LIS2MDL_GPIO_Port,
+    //     .csPin = CS_LIS2MDL_Pin,
+    // };
+    LPS22HB_Handle_t lps22hb = {
         .hspi = &hspi2,
-        .csPort = CS_LIS2MDL_GPIO_Port,
-        .csPin = CS_LIS2MDL_Pin,
+        .csPort = CS_LPS22HB_GPIO_Port,
+        .csPin = CS_LPS22HB_Pin,
     };
-
     // if (LIS2MDL_Init(&lis2mdl))
     // {
     //     while (1)
@@ -146,9 +154,27 @@ int main(void)
     //     HAL_Delay(1000);
     // };
 
-    while (LIS2MDL_Init(&lis2mdl))
+    // while (LIS2MDL_Init(&lis2mdl))
+    // {
+    //     // 2 flash
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //     HAL_Delay(100);
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //     HAL_Delay(200);
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    //     HAL_Delay(100);
+    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+    //     HAL_Delay(1000);
+    // };
+
+    while (LPS22HB_Init(&lps22hb))
     {
-        // 2 flash
+        // 3 flash
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        HAL_Delay(100);
+        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+        HAL_Delay(200);
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
         HAL_Delay(100);
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
@@ -164,7 +190,10 @@ int main(void)
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
-    LIS2MDL_Mag_Raw mag;
+    float pressure;
+    float temp;
+    uint8_t status;
+    bool measure_ready = false;
     int lastResult = 0;
     char buffer[50];
     while (1)
@@ -177,8 +206,70 @@ int main(void)
         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 
         // lastResult = LSM6DSO32_ReadAccelRaw(&lsm6dso32, &accel);
-        lastResult = LIS2MDL_ReadMagneticRaw(&lis2mdl, &mag);
-        int len = snprintf(buffer, sizeof(buffer), "x: %d, y: %d, z: %d\r\n", mag.x, mag.y, mag.z);
+        // lastResult = LIS2MDL_ReadMagneticRaw(&lis2mdl, &mag);
+
+        while (!measure_ready)
+        {
+
+            if (LPS22HB_Status(&lps22hb, &status) != 0)
+            {
+                // Measure failed
+                // Stall mode
+                while (true)
+                {
+                    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                    HAL_Delay(500);
+                    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                    HAL_Delay(500);
+                }
+            }
+
+            if ((status & LPS22HB_STATUS_PRESS_READY) == 0)
+            {
+                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                HAL_Delay(100);
+                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                HAL_Delay(1000);
+            }
+
+            else if ((status & LPS22HB_STATUS_PRESS_READY) == 0)
+            {
+                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                HAL_Delay(100);
+                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                HAL_Delay(300);
+
+                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                HAL_Delay(100);
+                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+                HAL_Delay(1000);
+            }
+            else
+            {
+                measure_ready = true;
+            }
+        }
+
+        lastResult = LPS22HB_ReadPressure_hPa(&lps22hb, &pressure);
+        lastResult |= LPS22HB_ReadTemp_C(&lps22hb, &temp);
+        measure_ready = false;
+
+        char *tmpSignPressure = (pressure < 0) ? "-" : "";
+        float tmpValPressure = (pressure < 0) ? -pressure : pressure;
+
+        int tmpInt1Pressure = tmpValPressure;                     // Get the integer (678).
+        float tmpFracPressure = tmpValPressure - tmpInt1Pressure; // Get fraction (0.0123).
+        int tmpInt2Pressure = trunc(tmpFracPressure * 10000);     // Turn into integer (123).
+
+        char *tmpSignTemp = (temp < 0) ? "-" : "";
+        float tmpValTemp = (temp < 0) ? -temp : temp;
+
+        int tmpInt1Temp = tmpValTemp;                 // Get the integer (678).
+        float tmpFracTemp = tmpValTemp - tmpInt1Temp; // Get fraction (0.0123).
+        int tmpInt2Temp = trunc(tmpFracTemp * 100);
+
+        // int len = snprintf(buffer, sizeof(buffer), "x: %d, y: %d, z: %d\r\n", mag.x, mag.y, mag.z);
+        int len = snprintf(buffer, sizeof(buffer), "p: %s%d.%04d, t: %s%d.%02d\r\n", tmpSignPressure, tmpInt1Pressure, tmpInt2Pressure, tmpSignTemp, tmpInt1Temp, tmpInt2Temp);
         HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, 1000);
         if (lastResult != 0)
         {
@@ -244,6 +335,39 @@ void SystemClock_Config(void)
     {
         Error_Handler();
     }
+}
+
+/**
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
+static void MX_I2C1_Init(void)
+{
+
+    /* USER CODE BEGIN I2C1_Init 0 */
+
+    /* USER CODE END I2C1_Init 0 */
+
+    /* USER CODE BEGIN I2C1_Init 1 */
+
+    /* USER CODE END I2C1_Init 1 */
+    hi2c1.Instance = I2C1;
+    hi2c1.Init.ClockSpeed = 100000;
+    hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+    hi2c1.Init.OwnAddress1 = 0;
+    hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    hi2c1.Init.OwnAddress2 = 0;
+    hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+    {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN I2C1_Init 2 */
+
+    /* USER CODE END I2C1_Init 2 */
 }
 
 /**
@@ -333,23 +457,16 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, CS_LPS22HB_Pin | CS_LSM6DSO32_Pin | LD2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(CS_LIS2MDL_GPIO_Port, CS_LIS2MDL_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, CS_LIS2MDL_Pin | CS_LSM6DSO32_Pin | CS_LPS22HB_Pin, GPIO_PIN_RESET);
 
     /*Configure GPIO pin : B1_Pin */
     GPIO_InitStruct.Pin = B1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : CS_LPS22HB_Pin CS_LSM6DSO32_Pin */
-    GPIO_InitStruct.Pin = CS_LPS22HB_Pin | CS_LSM6DSO32_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /*Configure GPIO pin : LD2_Pin */
     GPIO_InitStruct.Pin = LD2_Pin;
@@ -358,12 +475,12 @@ static void MX_GPIO_Init(void)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : CS_LIS2MDL_Pin */
-    GPIO_InitStruct.Pin = CS_LIS2MDL_Pin;
+    /*Configure GPIO pins : CS_LIS2MDL_Pin CS_LSM6DSO32_Pin CS_LPS22HB_Pin */
+    GPIO_InitStruct.Pin = CS_LIS2MDL_Pin | CS_LSM6DSO32_Pin | CS_LPS22HB_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    HAL_GPIO_Init(CS_LIS2MDL_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
     /* USER CODE BEGIN MX_GPIO_Init_2 */
     /* USER CODE END MX_GPIO_Init_2 */
