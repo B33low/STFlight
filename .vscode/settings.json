@@ -3,6 +3,7 @@
         "*.env": "properties",
         "type_traits": "c",
         "utility": "c",
-        "limits": "c"
+        "limits": "c",
+        "main.h": "c"
     }
 }

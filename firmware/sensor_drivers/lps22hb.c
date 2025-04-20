@@ -103,14 +103,14 @@ int LPS22HB_Init(LPS22HB_Handle_t *dev)
     }
 
     uint8_t ctrl1_xl = 0;
-    ctrl1_xl = 0x4e; // 5a//(1 << 6) | (1 << 4) | (0 << 3) | (0 << 1); // 50 Hz & EN_LPFP & BW=ODR/9 & BDU & 4WSPI
+    ctrl1_xl = 0x2 | dev->config.odr | dev->config.lp_bw; // Force BDU & 4WSPI
 
     if (LPS22HB_WriteReg(dev, LPS22HB_REG_CTRL_1, &ctrl1_xl, 1) != 0)
     {
         return -4;
     }
 
-    uint8_t ctrl2_g = 0x0C;
+    uint8_t ctrl2_g = (1 << 4) | (1 << 3);
     // ctrl2_g = 1 << 3; // remove I2C and auto addr inc
     if (LPS22HB_WriteReg(dev, LPS22HB_REG_CTRL_2, &ctrl2_g, 1) != 0)
     {
@@ -118,12 +118,12 @@ int LPS22HB_Init(LPS22HB_Handle_t *dev)
     }
 
     // Interrupt linked reguister
-    // uint8_t ctrl3 = 0;
-    // ctrl3 = 1 << 3; // remove I2C and auto addr inc
-    // if (LPS22HB_WriteReg(dev, LPS22HB_REG_CTRL_3, &ctrl3, 1) != 0)
-    // {
-    //     return -5;
-    // }
+    uint8_t ctrl3 = 0;
+    ctrl3 = dev->config.interupt_mode; // remove I2C and auto addr inc
+    if (LPS22HB_WriteReg(dev, LPS22HB_REG_CTRL_3, &ctrl3, 1) != 0)
+    {
+        return -5;
+    }
 
     // Additional registers (CTRL3_C, CTRL9_XL, etc.) for enabling features
 
@@ -237,5 +237,39 @@ int LPS22HB_Status(LPS22HB_Handle_t *dev, uint8_t *status)
         return -2;
     }
     *status &= 0x03;
+    return 0;
+}
+int LPS22HB_ReadPT_Burst(LPS22HB_Handle_t *dev, int32_t *pressure, int16_t *temp)
+{
+    if (!dev || !pressure || !temp)
+    {
+        return -1;
+    }
+
+    uint8_t rawData[5] = {0};
+    if (LPS22HB_ReadReg(dev, LPS22HB_REG_PRESS_OUT_XL, rawData, 5) != 0)
+    {
+        return -2;
+    }
+    // combine LSB/MSB for each axis
+    *pressure = (int32_t)((rawData[2] << 16) | (rawData[1] << 8) | rawData[0]);
+    if (*pressure & 0x00800000) // Sign extending
+    {
+        *pressure |= 0xFF000000;
+    }
+
+    *temp = (int16_t)(rawData[4] << 8 | rawData[3]);
+
+    return 0;
+}
+
+int LPS22HB_ReadPT_Burst_hPa_C(LPS22HB_Handle_t *dev, float *pressure, float *temp)
+{
+    int32_t raw_pressure;
+    int16_t raw_temp;
+
+    LPS22HB_ReadPT_Burst(dev, &raw_pressure, &raw_temp);
+    *pressure = raw_pressure / 4096.0f;
+    *temp = raw_temp / 100.0f;
     return 0;
 }

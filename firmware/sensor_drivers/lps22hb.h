@@ -32,11 +32,37 @@ extern "C"
 #define LPS22HB_STATUS_PRESS_READY 0x01
 #define LPS22HB_STATUS_TEMP_READY 0x02
 
+    enum LPS22HB_Config_ODR
+    {
+        LPS22HB_CONFIG_ODR_ONE_SHOT = 0x00,
+        LPS22HB_CONFIG_ODR_1HZ = 0x10,
+        LPS22HB_CONFIG_ODR_10HZ = 0x20,
+        LPS22HB_CONFIG_ODR_25HZ = 0x30,
+        LPS22HB_CONFIG_ODR_50HZ = 0x40,
+        LPS22HB_CONFIG_ODR_75HZ = 0x50,
+    };
+
+    enum LPS22HB_Config_LowPass_Bandwidth
+    {
+        LPS22HB_CONFIG_LP_BW_ODR_2 = 0x00,
+        LPS22HB_CONFIG_LP_BW_ODR_9 = 0x08,
+        LPS22HB_CONFIG_LP_BW_ODR_20 = 0x0c,
+    };
+
+    enum LPS22HB_Config_INTERRUPT
+    {
+        LPS22HB_CONFIG_INTERRUPT_MODE_OFF = 0x00,
+        LPS22HB_CONFIG_INTERRUPT_MODE_DATA_READY = 0x04,
+    };
+
     /*------------------------#ifdev __cplusplusrange, etc. as needed.
      */
     typedef struct
     {
-        uint8_t c;
+        enum LPS22HB_Config_INTERRUPT interupt_mode; // Should interrupt be used
+        enum LPS22HB_Config_ODR odr;
+        enum LPS22HB_Config_LowPass_Bandwidth lp_bw;
+
     } LPS22HB_Config_t;
 
     /**
@@ -130,6 +156,10 @@ extern "C"
      * @retval  0 on success, negative on error
      */
     int LPS22HB_ReadTemp_C(LPS22HB_Handle_t *dev, float *temp);
+
+    int LPS22HB_ReadPT_Burst(LPS22HB_Handle_t *dev, int32_t *pressure, int16_t *temp);
+
+    int LPS22HB_ReadPT_Burst_hPa_C(LPS22HB_Handle_t *dev, float *pressure, float *temp);
 
 #ifdef __cplusplus
 }
