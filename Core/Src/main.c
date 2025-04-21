@@ -117,7 +117,7 @@ int main(void)
         .config = {
             .interupt_mode = LPS22HB_CONFIG_INTERRUPT_MODE_DATA_READY,
             .odr = LPS22HB_CONFIG_ODR_75HZ,
-            .lp_bw = LPS22HB_CONFIG_LP_BW_ODR_2,
+            .lp_bw = LPS22HB_CONFIG_LP_BW_ODR_20,
         },
     };
     // if (LIS2MDL_Init(&lis2mdl))
@@ -375,7 +375,7 @@ static void MX_SPI2_Init(void)
     hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
     hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
     hspi2.Init.NSS = SPI_NSS_SOFT;
-    hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+    hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
     hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
     hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
     hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
