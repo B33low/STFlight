@@ -63,6 +63,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware/sensor_drivers
+    ${CMAKE_CURRENT_SOURCE_DIR}/firmware/flight_control_core
+
 )
 
 # Add project symbols (macros)

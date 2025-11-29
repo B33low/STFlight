@@ -1,0 +1,5 @@
+{
+  "board": "STM32VLDISCOVERY",
+  "device": "STM32F100RBT6B",
+  "toolchain": "GCC"
+}
