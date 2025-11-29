@@ -5,7 +5,8 @@ import numpy as np
 
 # Open the serial connection
 # Set timeout for non-blocking reads
-arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=0.1)
+#arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=0.1)
+arduino = serial.Serial('COM3', 115200, timeout=0.1)
 
 # Drop the first line of data
 arduino.readline()
@@ -34,10 +35,10 @@ ax1.set_xlim(0, 50)
 ax2.set_xlim(0, 50)
 
 # Pressure on the left axis: 1000..1100
-ax1.set_ylim(1000, 1100)
+ax1.set_ylim(950, 1050)
 
 # Temperature on the right axis: 17..40
-ax2.set_ylim(17, 40)
+ax2.set_ylim(5, 40)
 
 ax1.legend()
 ax2.legend()

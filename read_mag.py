@@ -5,7 +5,8 @@ import numpy as np
 
 # Open the serial connection
 # Set timeout for non-blocking reads
-arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=0.1)
+#arduino = serial.Serial('/dev/ttyACM0', 115200, timeout=0.1)
+arduino = serial.Serial('COM3', 115200, timeout=0.1)
 
 # Drop the first line of data
 arduino.readline()
