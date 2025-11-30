@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -99,173 +100,17 @@ int main(void)
     MX_I2C1_Init();
     /* USER CODE BEGIN 2 */
 
-    // LSM6DSO32_Handle_t lsm6dso32 = {
-    //     .hspi = &hspi2,
-    //     .csPort = CS_LSM6DSO32_GPIO_Port,
-    //     .csPin = CS_LSM6DSO32_Pin,
-    // };
-
-    // LIS2MDL_Handle_t lis2mdl = {
-    //     .hspi = &hspi2,
-    //     .csPort = CS_LIS2MDL_GPIO_Port,
-    //     .csPin = CS_LIS2MDL_Pin,
-    // };
-    LPS22HB_Handle_t lps22hb = {
-        .hspi = &hspi2,
-        .csPort = CS_LPS22HB_GPIO_Port,
-        .csPin = CS_LPS22HB_Pin,
-        .config = {
-            .interupt_mode = LPS22HB_CONFIG_INTERRUPT_MODE_DATA_READY,
-            .odr = LPS22HB_CONFIG_ODR_75HZ,
-            .lp_bw = LPS22HB_CONFIG_LP_BW_ODR_20,
-        },
-    };
-    // if (LIS2MDL_Init(&lis2mdl))
-    // {
-    //     while (1)
-    //     {
-    //         // 3 flash
-    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //         HAL_Delay(100);
-    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-    //         HAL_Delay(200);
-
-    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //         HAL_Delay(100);
-    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-    //         HAL_Delay(200);
-
-    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //         HAL_Delay(100);
-    //         HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-    //         HAL_Delay(1000);
-    //     }
-    // };
-
-    // while (LSM6DSO32_Init(&lsm6dso32))
-    // {
-    //     // 2 flash
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //     HAL_Delay(100);
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //     HAL_Delay(200);
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //     HAL_Delay(100);
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-    //     HAL_Delay(1000);
-    // };
-
-    // while (LIS2MDL_Init(&lis2mdl))
-    // {
-    //     // 2 flash
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //     HAL_Delay(100);
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //     HAL_Delay(200);
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    //     HAL_Delay(100);
-    //     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-    //     HAL_Delay(1000);
-    // };
-
-    while (LPS22HB_Init(&lps22hb))
-    {
-        // 3 flash
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        HAL_Delay(100);
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        HAL_Delay(200);
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        HAL_Delay(100);
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        HAL_Delay(200);
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        HAL_Delay(100);
-        HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-
-        HAL_Delay(1000);
-    };
-
+    app_init();
+    
     /* USER CODE END 2 */
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
-    float pressure;
-    float temp;
-    uint8_t status = 0;
-    int lastResult = 0;
-    char buffer[50];
+    
     while (1)
     {
 
-        // lastResult = LSM6DSO32_ReadAccelRaw(&lsm6dso32, &accel);
-        // lastResult = LIS2MDL_ReadMagneticRaw(&lis2mdl, &mag);
-
-        if (lps22hb_data_ready)
-        {
-            lastResult = LPS22HB_ReadPT_Burst_hPa_C(&lps22hb, &pressure, &temp);
-
-            lps22hb_data_ready = false;
-
-            char *tmpSignPressure = (pressure < 0) ? "-" : "";
-            float tmpValPressure = (pressure < 0) ? -pressure : pressure;
-
-            int tmpInt1Pressure = tmpValPressure;                     // Get the integer (678).
-            float tmpFracPressure = tmpValPressure - tmpInt1Pressure; // Get fraction (0.0123).
-            int tmpInt2Pressure = trunc(tmpFracPressure * 10000);     // Turn into integer (123).
-
-            char *tmpSignTemp = (temp < 0) ? "-" : "";
-            float tmpValTemp = (temp < 0) ? -temp : temp;
-
-            int tmpInt1Temp = tmpValTemp;                 // Get the integer (678).
-            float tmpFracTemp = tmpValTemp - tmpInt1Temp; // Get fraction (0.0123).
-            int tmpInt2Temp = trunc(tmpFracTemp * 100);
-
-            // int len = snprintf(buffer, sizeof(buffer), "x: %d, y: %d, z: %d\r\n", mag.x, mag.y, mag.z);
-            int len = snprintf(buffer, sizeof(buffer), "p: %s%d.%04d, t: %s%d.%02d\r\n", tmpSignPressure, tmpInt1Pressure, tmpInt2Pressure, tmpSignTemp, tmpInt1Temp, tmpInt2Temp);
-            HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, 1000);
-        }
-
-        if (LPS22HB_Status(&lps22hb, &status) != 0)
-        {
-            // Measure failed
-            // Stall mode
-            while (true)
-            {
-                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-                HAL_Delay(500);
-                HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-                HAL_Delay(500);
-            }
-        }
-
-        if ((status & 0x03) == 0x03)
-        {
-            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
-        }
-        if ((status & 0x03) != 0x03)
-        {
-            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
-        }
-
-        if (lastResult != 0)
-        {
-            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-            HAL_Delay(1000);
-        }
-        // HAL_Delay(100);
-
-        // HAL_Delay(1000);
-
-        if (lastResult != 0)
-        {
-            HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-        }
+        app_loop();
 
         /* USER CODE END WHILE */
 

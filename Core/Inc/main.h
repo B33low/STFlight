@@ -44,7 +44,7 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+extern volatile bool lps22hb_data_ready;
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

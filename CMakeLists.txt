@@ -55,6 +55,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     firmware/sensor_drivers/lsm6dso32.c
     firmware/sensor_drivers/lis2mdl.c
     firmware/sensor_drivers/lps22hb.c
+    firmware/flight_control_core/fc.c
+    firmware/hw_app/app.c
 )
 
 # Add include paths
@@ -64,6 +66,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware/sensor_drivers
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware/flight_control_core
+    ${CMAKE_CURRENT_SOURCE_DIR}/firmware/hw_app
 
 )
 
@@ -78,4 +81,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+)
+
+target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+    -u _printf_float
 )

@@ -29,10 +29,10 @@ int main(void) {
     printf("time,motor1,motor2,motor3,motor4,sim_az,sim_vz,sim_pz,setpoint,"
        "dt,e_vz,u_p,u_i,u_d,u_raw,u_sat,vz_est,pz_est\n");
 
-    for (int i = 0; i < 10000; ++i) { // 10 secondes à 1 kHz
+    for (int i = 0; i < 100; ++i) { // 10 secondes à 1 kHz
         in.time_s = t;
 
-        in.ax = s_out.ax; in.ay = s_out.ay; in.az = s_out.az; // False sensor simulation
+        in.ax = 0; in.ay = 0; in.az =i; // False sensor simulation
         in.setpoint_vz = vz_cons;
         in.gx = in.gy = in.gz = 0.0f;
 
@@ -42,7 +42,7 @@ int main(void) {
         s_in.u = out.motor[0];
 
         // Drone state update (Simulation)
-        sim_step(  &s_state, &s_in, &s_out);
+        //sim_step(  &s_state, &s_in, &s_out);
 
 
         printf("%.3f,%.3f,%.3f,%.3f,%.3f,"  // time, motors
