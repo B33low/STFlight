@@ -63,6 +63,7 @@ static void MX_I2C1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 volatile bool lps22hb_data_ready = false;
+volatile bool lsm6dso32_data_ready = true;
 
 /* USER CODE END 0 */
 
