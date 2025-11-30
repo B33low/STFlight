@@ -35,6 +35,7 @@ extern "C" {
 #include "lis2mdl.h"
 #include "lps22hb.h"
 #include <math.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

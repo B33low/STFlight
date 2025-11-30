@@ -9,11 +9,11 @@
 #define MODE_OPEN_LOOP   2
 #define MODE_SENSOR_LPS22_DEMO  3
 
-#define APP_MODE MODE_OPEN_LOOP   
+#define APP_MODE MODE_SENSOR_LPS22_DEMO   
 
 
 #if APP_MODE == MODE_SENSOR_LPS22_DEMO
-static SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi2; 
 static LPS22HB_Handle_t lps22hb;
 
 static float pressure;

@@ -330,6 +330,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     if (GPIO_Pin == INT_LPS22_Pin)
     { // same pin as above
         lps22hb_data_ready = true;
+        
     }
 }
 
