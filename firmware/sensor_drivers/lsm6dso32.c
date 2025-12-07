@@ -86,80 +86,87 @@ int LSM6DSO32_WriteReg(LSM6DSO32_Handle_t *dev, uint8_t reg, const uint8_t *data
 
 int LSM6DSO32_Init(LSM6DSO32_Handle_t *dev)
 {
-    if (!dev || !dev->hspi)
-    {
+    if (!dev || !dev->hspi) {
         return -1;
     }
 
-    // 1) Check WHO_AM_I
-    uint8_t whoAmI = 0;
-    if (LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_WHO_AM_I, &whoAmI, 1) != 0)
-    {
+    HAL_Delay(10); // power-up time
+
+    // 1) WHO_AM_I
+    uint8_t who = 0;
+    if (LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_WHO_AM_I, &who, 1) != 0) {
         return -2;
     }
-    if (whoAmI != LSM6DSO32_WHO_AM_I_VAL)
-    {
-        return -3; // not the correct device
+    if (who != LSM6DSO32_WHO_AM_I_VAL) {
+        return -3;
     }
 
-    // 2) Configure accelerometer in CTRL1_XL
-    //    For example, 0x40 -> ODR=1.66kHz, ±4g
-    //    But let's parse from dev->config
-    //    We'll do a simplistic approach here:
-    uint8_t ctrl1_xl = 0;
-    // bits[7:4] = ODR, bits[3:2] = FS (range), bits[1:0]=BW
-    // This is just an example, you can map dev->config.accelOdr, etc.
-    ctrl1_xl = 0x48; // 1.66 Khz && 8g accekleration
+    // 2) Reset + reboot (optional but nice to be sure)
+    uint8_t ctrl3 = 0x01;             // SW_RESET
+    LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL3_C, &ctrl3, 1);
+    HAL_Delay(20);
+    ctrl3 = 0x00;
+    LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL3_C, &ctrl3, 1);
 
-    if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL1_XL, &ctrl1_xl, 1) != 0)
-    {
+    // 3) Enable auto-increment + BDU
+    // CTRL3_C: BDU=1 (bit6), IF_INC=1 (bit2) -> 0b01000100 = 0x44
+    ctrl3 = 0x44;
+    if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL3_C, &ctrl3, 1) != 0) {
         return -4;
     }
 
-    // 3) Configure gyroscope in CTRL2_G if needed
-    uint8_t ctrl2_g = 0;
-    ctrl2_g = 0x4c; // e.g., ODR=1.66kHz, ±2000 dps
-    if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL2_G, &ctrl2_g, 1) != 0)
-    {
+    // 4) Accelerometer @ 104 Hz, ±8 g
+    // CTRL1_XL: ODR_XL[3:0]=0100 (104 Hz), FS_XL[1:0]=10 (±8g), BW_XL[1:0]=00
+    // -> 0b0100 1000 = 0x48
+    uint8_t ctrl1_xl = 0x48;
+    if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL1_XL, &ctrl1_xl, 1) != 0) {
         return -5;
     }
 
-    // Additional registers (CTRL3_C, CTRL9_XL, etc.) for enabling features
+    // 5) Gyro @ 104 Hz, ±2000 dps
+    // CTRL2_G: ODR_G[3:0]=0100 (104 Hz), FS_G[1:0]=11 (±2000 dps)
+    // -> 0b0100 1100 = 0x4C
+    uint8_t ctrl2_g = 0x4C;
+    if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_CTRL2_G, &ctrl2_g, 1) != 0) {
+        return -6;
+    }
 
-    return 0; // success
+    // 6) Read back to be *sure* the writes really landed
+    uint8_t r1=0, r2=0, r3=0;
+    LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_CTRL1_XL, &r1, 1);
+    LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_CTRL2_G, &r2, 1);
+    LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_CTRL3_C, &r3, 1);
+
+    // If these are still 0x00, something is wrong at hardware/SPI level
+    if (r1 != ctrl1_xl || r2 != ctrl2_g || r3 != ctrl3) {
+        return -7;
+    }
+
+    return 0;
 }
 
-int LSM6DSO32_ReadAccelRaw(LSM6DSO32_Handle_t *dev, LSM6DSO32_AccelRaw_t *accel)
+
+int LSM6DSO32_ReadAccelRaw(LSM6DSO32_Handle_t *dev,
+                           LSM6DSO32_AccelRaw_t *accel)
 {
-    if (!dev || !accel)
-    {
+    if (!dev || !accel) {
         return -1;
     }
 
     uint8_t rawData[6] = {0};
-    uint8_t addrToRead[6] = {LSM6DSO32_REG_OUTX_L_A,
-                             LSM6DSO32_REG_OUTX_H_A,
-                             LSM6DSO32_REG_OUTY_L_A,
-                             LSM6DSO32_REG_OUTY_H_A,
-                             LSM6DSO32_REG_OUTZ_L_A,
-                             LSM6DSO32_REG_OUTZ_H_A};
-    for (uint8_t i = 0; i < 6; i++)
-    {
-        uint8_t received;
-        if (LSM6DSO32_ReadReg(dev, addrToRead[i], &received, 1) != 0)
-        {
-            return -2;
-        }
-        rawData[i] = received;
+
+    // thanks to IF_INC=1, this reads X_L, X_H, Y_L, Y_H, Z_L, Z_H in one shot
+    if (LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_OUTX_L_A, rawData, 6) != 0) {
+        return -2;
     }
 
-    // combine LSB/MSB for each axis
     accel->x = (int16_t)((rawData[1] << 8) | rawData[0]);
     accel->y = (int16_t)((rawData[3] << 8) | rawData[2]);
     accel->z = (int16_t)((rawData[5] << 8) | rawData[4]);
 
     return 0;
 }
+
 
 int LSM6DS032_WhoIAm(LSM6DSO32_Handle_t *dev)
 {

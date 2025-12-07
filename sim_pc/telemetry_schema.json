@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "items": [
+    { "id": 1, "kind": "STREAM", "name": "IMU_RAW", "type": "ImuRawSample", "size": 16 },
+    { "id": 2, "kind": "PARAM",  "name": "IMU_CONV_META", "type": "ImuConvMeta", "size": 4 },
+    { "id": 3, "kind": "STATE",  "name": "ATTITUDE", "type": "Attitude", "size": 12 },
+    { "id": 4, "kind": "STATE",  "name": "ALTITUDE", "type": "Altitude", "size": 12 }
+  ]
+}

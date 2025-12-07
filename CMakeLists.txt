@@ -20,8 +20,6 @@ endif()
 # Set the project name
 set(CMAKE_PROJECT_NAME STFlight)
 
-# Include toolchain file
-include("cmake/gcc-arm-none-eabi.cmake")
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
@@ -56,7 +54,26 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     firmware/sensor_drivers/lis2mdl.c
     firmware/sensor_drivers/lps22hb.c
     firmware/flight_control_core/fc.c
+    firmware/flight_control_core/altitude_estimator.c
+    firmware/flight_control_core/attitude_estimator.c
     firmware/hw_app/app.c
+    # Data store core
+    firmware/data_store/stream_base.c
+    firmware/data_store/state_base.c
+    firmware/data_store/param_base.c
+
+    firmware/params/imu_params.c
+    firmware/params/att_filter_params.c
+    firmware/streams/imu_stream.c
+    firmware/states/altitude_state.c
+    firmware/states/attitude_state.c
+
+
+    # Serializer registry (if your main uses it)
+    firmware/data_store/serializer/bus_registery.c
+    firmware/data_store/serializer/bus_serialize.c
+    firmware/data_store/serializer/bus_rx.c
+
 )
 
 # Add include paths
@@ -67,6 +84,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware/sensor_drivers
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware/flight_control_core
     ${CMAKE_CURRENT_SOURCE_DIR}/firmware/hw_app
+    ${CMAKE_CURRENT_SOURCE_DIR}/firmware/data_store
+    ${CMAKE_CURRENT_SOURCE_DIR}/firmware/streams
+    ${CMAKE_CURRENT_SOURCE_DIR}/firmware/states
+    ${CMAKE_CURRENT_SOURCE_DIR}/firmware/params
+    ${CMAKE_CURRENT_SOURCE_DIR}/firmware/data_store/serializer
 
 )
 
