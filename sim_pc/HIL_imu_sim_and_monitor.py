@@ -170,6 +170,8 @@ def reader_loop(ser: serial.Serial, stop_flag):
 
 # ---------------- Main sending loop ----------------
 def main():
+    import math
+
     port = "COM3"
     baud = 115200
 
@@ -180,30 +182,75 @@ def main():
     t_reader.start()
 
     print(f"Connected to {port} @ {baud}")
-    print("Sending IMU injections every 0.1s. Ctrl+C to stop.\n")
+    print("Sending IMU tilt simulation every 0.1s. Ctrl+C to stop.\n")
+
+    # ---- Must match your MCU param (ImuConvMeta.accel_lsb_to_ms2) ----
+    ACC_LSB_TO_MS2 = 0.01  # you set this in app_init
+    G_MS2 = 9.80665
+    G_LSB = G_MS2 / ACC_LSB_TO_MS2  # ~981 LSB
+
+    # ---- Optional gyro scale used by your estimator fallback ----
+    # In your C attitude estimator:
+    #   gx = raw.gx * 0.001f;  // rad/s
+    GYRO_LSB_TO_RAD = 0.001
+
+    # ---- Tilt profile ----
+    # We'll simulate pitch as a sine wave
+    A_DEG = 25.0   # amplitude of tilt
+    F_HZ  = 0.2    # 1 cycle every 5 seconds
 
     start = time.perf_counter()
-    az = 0
+
+    def clamp_i16(x):
+        xi = int(round(x))
+        if xi < -32768:
+            return -32768
+        if xi > 32767:
+            return 32767
+        return xi
 
     try:
         while True:
-            # Build a changing fake IMU sample
-            # Example pattern: az ramps 0..200 then wraps
-            az = (az + 10) % 200
-
             elapsed_s = time.perf_counter() - start
             t_us = int(elapsed_s * 1_000_000)
 
+            # Pitch angle theta(t)
+            A_RAD = math.radians(A_DEG)
+            theta = A_RAD * math.sin(2 * math.pi * F_HZ * elapsed_s)
+
+            # Gravity vector projected into body axes (pitch about Y)
+            # Sign convention chosen to match your estimator formulas:
+            # roll_acc  = atan2(ay, az)
+            # pitch_acc = atan2(-ax, sqrt(ay^2 + az^2))
+            ax = -G_LSB * math.sin(theta)
+            ay = 0.0
+            az =  G_LSB * math.cos(theta)
+
+            # Optional gyro-consistent pitch rate
+            # theta_dot = d/dt [A*sin(2π f t)] = A*2π f*cos(2π f t)
+            theta_dot = A_RAD * (2 * math.pi * F_HZ) * math.cos(2 * math.pi * F_HZ * elapsed_s)
+
+            gx = 0.0
+            gy = theta_dot / GYRO_LSB_TO_RAD   # convert rad/s -> raw LSB
+            gz = 0.0
+
             payload = pack_imu_raw(
-                ax=0, ay=0, az=az,
-                gx=0, gy=0, gz=0,
+                ax=clamp_i16(ax),
+                ay=clamp_i16(ay),
+                az=clamp_i16(az),
+                gx=clamp_i16(gx),
+                gy=clamp_i16(gy),
+                gz=clamp_i16(gz),
                 temp=0,
                 t_us=t_us
             )
 
+            # NEW header (msg field included)
             send_frame(ser, BUS_MSG_INJECT, BUS_KIND_STREAM, ID_IMU_RAW, payload)
 
-            print(f"[TX] INJECT STREAM id={ID_IMU_RAW} IMU_RAW az={az} t_us={t_us}")
+            print(f"[TX] INJECT STREAM id={ID_IMU_RAW} IMU_RAW "
+                  f"ax={int(ax)} ay={int(ay)} az={int(az)} "
+                  f"gy={int(gy)} t_us={t_us}")
 
             time.sleep(0.1)
 
