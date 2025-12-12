@@ -51,7 +51,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     HXbots/app/app.c
     HXbots/app/bus_registery_app.c
 
-    HXbots/core/bus/bus_registery.c
+    HXbots/core/bus/bus_registery_core.c
     HXbots/core/bus/bus_rx.c
     HXbots/core/bus/bus_serialize.c
 
