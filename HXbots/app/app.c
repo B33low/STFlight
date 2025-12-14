@@ -14,6 +14,8 @@
 #include "state_base.h"
 #include "stream_base.h"
 
+#include "bus_registery_app.h"
+
 #include "attitude_state.h"
 #include "imu_params.h"
 #include "imu_stream.h"
@@ -34,7 +36,7 @@
 #define MODE_HXBOT_TEST (MODE_OPEN_LOOP | MODE_HIL)
 
 /* CURRENT MODE */
-#define APP_MODE (MODE_SENSOR_LSM6DSO32_DEMO )
+#define APP_MODE (MODE_SENSOR_LSM6DSO32_DEMO | MODE_HIL )
 
 static LPS22HB_Handle_t lps22hb;
 static LSM6DSO32_Handle_t lsm6dso32;
@@ -274,6 +276,7 @@ void app_init(void) {
   uart_log("=== HIL ENABLED (UART inject) ===\r\n");
   hil_uart_start_rx();
 #endif
+bus_registry_app_init();
 
 #if (APP_MODE & MODE_OPEN_LOOP) == MODE_OPEN_LOOP
   uart_log("=== FC OPEN LOOP TEST ===\r\n");
@@ -403,6 +406,7 @@ void app_loop(void) {
       s.gx = gx_raw;
       s.gy = gy_raw;
       s.gz = gz_raw;
+      s.t_us = now_ms * 1000u; // Maybe create a timer for microsecond accuracy later
       stream_any_push(&g_stream_imu_raw, &s);
 #else
 
