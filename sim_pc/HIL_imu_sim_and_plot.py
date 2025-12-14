@@ -5,6 +5,7 @@ import threading
 from collections import deque
 import math
 import numpy as np
+import argparse
 
 import matplotlib.pyplot as plt
 
@@ -182,42 +183,12 @@ def rpy_to_body_z_world(roll, pitch, yaw):
     return float(v[0]), float(v[1]), float(v[2])
 
 
-# ===================== BACKFLIP PROFILE =====================
-import math
-import numpy as np
-
-G = 9.80665
-ACC_LSB_TO_MS2  = 0.01
-GYRO_LSB_TO_RAD = 0.001
-
-
+# ===================== SAFE ROLL PROFILE (for HIL mode) =====================
 def smoothstep(s):
     return s * s * (3.0 - 2.0 * s)
 
 def smoothstep_derivative(s):
     return 6.0 * s * (1.0 - s)
-
-
-def Rx(r):
-    cr, sr = np.cos(r), np.sin(r)
-    return np.array([[1,0,0],[0,cr,-sr],[0,sr,cr]], dtype=float)
-
-def Ry(p):
-    cp, sp = np.cos(p), np.sin(p)
-    return np.array([[cp,0,sp],[0,1,0],[-sp,0,cp]], dtype=float)
-
-def Rz(y):
-    cy, sy = np.cos(y), np.sin(y)
-    return np.array([[cy,-sy,0],[sy,cy,0],[0,0,1]], dtype=float)
-
-def rpy_to_R(roll, pitch, yaw):
-    return Rz(yaw) @ Ry(pitch) @ Rx(roll)
-
-def gravity_in_body(roll, pitch, yaw):
-    R = rpy_to_R(roll, pitch, yaw)
-    g_world = np.array([0.0, 0.0, G], dtype=float)
-    a_body = R.T @ g_world
-    return float(a_body[0]), float(a_body[1]), float(a_body[2])
 
 
 def safe_roll_maneuver_profile(
@@ -329,7 +300,7 @@ def imu_model(t):
 
 
 # ===================== READER THREAD =====================
-def reader_loop(ser, stop, shared, lock):
+def reader_loop(ser, stop, shared, lock, debug_frames=False):
     parser = BusFrameParserNew()
 
     while not stop["stop"]:
@@ -341,10 +312,18 @@ def reader_loop(ser, stop, shared, lock):
         now_pc = time.perf_counter()
 
         for msg, kind, id_, payload in frames:
+            with lock:
+                shared["frames_total"] += 1
+
+            if debug_frames:
+                print(f"[RX FRAME] msg={msg} kind={kind} id={id_} len={len(payload)}")
+
+            # ---------- IMU RAW STREAM ----------
             if msg == BUS_MSG_PUBLISH and kind == BUS_KIND_STREAM and id_ == ID_IMU_RAW:
                 if len(payload) == IMU_SIZE:
                     ax, ay, az, gx, gy, gz, temp, t_us = struct.unpack(IMU_FMT, payload)
                     with lock:
+                        shared["imu_frames"] += 1
                         shared["t_imu"].append(now_pc)
                         shared["ax_raw"].append(ax)
                         shared["ay_raw"].append(ay)
@@ -352,30 +331,69 @@ def reader_loop(ser, stop, shared, lock):
                         shared["gx_raw"].append(gx)
                         shared["gy_raw"].append(gy)
                         shared["gz_raw"].append(gz)
+                else:
+                    with lock:
+                        shared["imu_bad_len"] += 1
+                    # Helpful debug for struct mismatch
+                    print(f"[WARN] IMU frame wrong length: {len(payload)} (expected {IMU_SIZE})")
 
+            # ---------- ATTITUDE STATE ----------
             elif msg == BUS_MSG_PUBLISH and kind == BUS_KIND_STATE and id_ == ID_ATT_STATE:
                 if len(payload) == ATT_SIZE:
                     roll, pitch, yaw = struct.unpack(ATT_FMT, payload)
                     with lock:
+                        shared["att_frames"] += 1
                         shared["att_latest"] = (roll, pitch, yaw)
                         shared["t_att"].append(now_pc)
 
+            # ---------- ALTITUDE STATE ----------
             elif msg == BUS_MSG_PUBLISH and kind == BUS_KIND_STATE and id_ == ID_ALT_STATE:
                 if len(payload) == ALT_SIZE:
                     az_ms2, vz_mps, pz_m, t_us = struct.unpack(ALT_FMT, payload)
                     with lock:
+                        shared["alt_frames"] += 1
                         shared["t_alt"].append(now_pc)
                         shared["pz_m"].append(pz_m)
+
+            else:
+                # Some other message / kind / id we don't care about yet
+                with lock:
+                    shared["other_frames"] += 1
+
+
+# ===================== ARGS =====================
+def parse_args():
+    p = argparse.ArgumentParser()
+    p.add_argument("--port", default="COM3", help="Serial port (default: COM3)")
+    p.add_argument("--baud", type=int, default=115200, help="Baudrate (default: 115200)")
+    p.add_argument(
+        "--mode",
+        choices=["listen", "inject"],
+        default="listen",
+        help="listen: just log real IMU; inject: send fake IMU via HIL"
+    )
+    p.add_argument(
+        "--debug-frames",
+        action="store_true",
+        help="Print every received frame header (msg/kind/id/len)"
+    )
+    return p.parse_args()
 
 
 # ===================== MAIN =====================
 def main():
-    port = "COM3"
-    baud = 115200
+    args = parse_args()
+
+    port = args.port
+    baud = args.baud
+    mode = args.mode
+    debug_frames = args.debug_frames
+
+    enable_inject = (mode == "inject")
 
     INJECT_PERIOD = 0.02  # 50 Hz
     PLOT_PERIOD   = 0.05  # 20 Hz
-    DEBUG_PERIOD  = 0.20  # console throttle
+    DEBUG_PERIOD  = 0.50  # console throttle
 
     ser = serial.Serial(port, baud, timeout=0.05)
 
@@ -396,9 +414,21 @@ def main():
 
         "t_att": deque(maxlen=300),
         "att_latest": (0.0, 0.0, 0.0),
+
+        # RX stats
+        "frames_total": 0,
+        "imu_frames":   0,
+        "imu_bad_len":  0,
+        "att_frames":   0,
+        "alt_frames":   0,
+        "other_frames": 0,
     }
 
-    t_reader = threading.Thread(target=reader_loop, args=(ser, stop, shared, lock), daemon=True)
+    t_reader = threading.Thread(
+        target=reader_loop,
+        args=(ser, stop, shared, lock, debug_frames),
+        daemon=True
+    )
     t_reader.start()
 
     # --------- 2D plots ----------
@@ -441,6 +471,7 @@ def main():
     ax_att3d.set_ylim(-1, 1)
     ax_att3d.set_zlim(-1, 1)
 
+    # world axes
     ax_att3d.plot([0, 1], [0, 0], [0, 0])
     ax_att3d.plot([0, 0], [0, 1], [0, 0])
     ax_att3d.plot([0, 0], [0, 0], [0, 1])
@@ -452,7 +483,7 @@ def main():
     last_plot   = 0.0
     last_dbg    = 0.0
 
-    # Keep latest TX "truth"
+    # Keep latest TX "truth" (only meaningful in inject mode)
     truth = {
         "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
         "ax": 0, "ay": 0, "az": 0,
@@ -460,15 +491,16 @@ def main():
     }
 
     print(f"Connected to {port} @ {baud}")
-    print("Injecting IMU backflip sim. Ctrl+C to stop.\n")
+    print(f"Mode: {mode.upper()} (inject fake IMU: {enable_inject})")
+    print("Ctrl+C to stop.\n")
 
     try:
         while True:
             now = time.perf_counter()
             t = now - start
 
-            # --------- INJECT ----------
-            if now - last_inject >= INJECT_PERIOD:
+            # --------- INJECT (only if mode == inject) ----------
+            if enable_inject and (now - last_inject >= INJECT_PERIOD):
                 last_inject = now
                 t_us = int(t * 1_000_000)
 
@@ -492,28 +524,40 @@ def main():
             if now - last_dbg >= DEBUG_PERIOD:
                 last_dbg = now
 
-                # RX attitude snapshot
                 with lock:
                     est_roll, est_pitch, est_yaw = shared["att_latest"]
-
-                # Compute accel-only angles from TX sample (as your MCU does)
-                ax_ms2 = truth["ax"] * ACC_LSB_TO_MS2
-                ay_ms2 = truth["ay"] * ACC_LSB_TO_MS2
-                az_ms2 = truth["az"] * ACC_LSB_TO_MS2
-
-                roll_acc  = math.atan2(ay_ms2, az_ms2)
-                pitch_acc = math.atan2(-ax_ms2, math.sqrt(ay_ms2*ay_ms2 + az_ms2*az_ms2))
-
-                def deg(x): return x * 180.0 / math.pi
+                    frames_total = shared["frames_total"]
+                    imu_frames   = shared["imu_frames"]
+                    imu_bad_len  = shared["imu_bad_len"]
+                    att_frames   = shared["att_frames"]
+                    alt_frames   = shared["alt_frames"]
+                    other_frames = shared["other_frames"]
 
                 print(
-                    "[DBG] "
-                    f"TX rpy(deg)=({deg(truth['roll']):6.1f},{deg(truth['pitch']):6.1f},{deg(truth['yaw']):6.1f}) "
-                    f"TX a=({truth['ax']:6d},{truth['ay']:6d},{truth['az']:6d}) "
-                    f"TX g=({truth['gx']:6d},{truth['gy']:6d},{truth['gz']:6d}) | "
-                    f"ACC r/p(deg)=({deg(roll_acc):6.1f},{deg(pitch_acc):6.1f}) | "
-                    f"RX rpy(deg)=({deg(est_roll):6.1f},{deg(est_pitch):6.1f},{deg(est_yaw):6.1f})"
+                    f"[STATS] frames_total={frames_total} | "
+                    f"IMU ok={imu_frames}, IMU bad_len={imu_bad_len}, "
+                    f"ATT={att_frames}, ALT={alt_frames}, OTHER={other_frames}"
                 )
+
+                if enable_inject:
+                    # Compute accel-only angles from TX sample (as your MCU does)
+                    ax_ms2 = truth["ax"] * ACC_LSB_TO_MS2
+                    ay_ms2 = truth["ay"] * ACC_LSB_TO_MS2
+                    az_ms2 = truth["az"] * ACC_LSB_TO_MS2
+
+                    roll_acc  = math.atan2(ay_ms2, az_ms2)
+                    pitch_acc = math.atan2(-ax_ms2, math.sqrt(ay_ms2*ay_ms2 + az_ms2*az_ms2))
+
+                    def deg(x): return x * 180.0 / math.pi
+
+                    print(
+                        "[DBG] "
+                        f"TX rpy(deg)=({deg(truth['roll']):6.1f},{deg(truth['pitch']):6.1f},{deg(truth['yaw']):6.1f}) "
+                        f"TX a=({truth['ax']:6d},{truth['ay']:6d},{truth['az']:6d}) "
+                        f"TX g=({truth['gx']:6d},{truth['gy']:6d},{truth['gz']:6d}) | "
+                        f"ACC r/p(deg)=({deg(roll_acc):6.1f},{deg(pitch_acc):6.1f}) | "
+                        f"RX rpy(deg)=({deg(est_roll):6.1f},{deg(est_pitch):6.1f},{deg(est_yaw):6.1f})"
+                    )
 
             # --------- PLOT ----------
             if now - last_plot >= PLOT_PERIOD:

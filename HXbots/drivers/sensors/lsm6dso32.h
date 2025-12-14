@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,8 +16,17 @@ extern "C" {
 #define LSM6DSO32_REG_CTRL1_XL 0x10
 #define LSM6DSO32_REG_CTRL2_G 0x11
 #define LSM6DSO32_REG_CTRL3_C 0x12
+#define LSM6DSO32_REG_CTRL4_C 0x13
 #define LSM6DSO32_REG_STATUS_REG 0x1E
+#define LSM6DSO32_REG_INT1_CTRL 0x0D
+#define LSM6DSO32_REG_INT2_CTRL 0x0E
 
+#define LSM6DSO32_REG_OUTX_L_G 0x22
+#define LSM6DSO32_REG_OUTX_H_G 0x23
+#define LSM6DSO32_REG_OUTY_L_G 0x24
+#define LSM6DSO32_REG_OUTY_H_G 0x25
+#define LSM6DSO32_REG_OUTZ_L_G 0x26
+#define LSM6DSO32_REG_OUTZ_H_G 0x27
 #define LSM6DSO32_REG_OUTX_L_A 0x28 // first accel data register
 #define LSM6DSO32_REG_OUTX_H_A 0x29
 
@@ -57,6 +65,12 @@ typedef struct {
   int16_t z;
 } LSM6DSO32_AccelRaw_t;
 
+typedef struct {
+    int16_t x;
+    int16_t y;
+    int16_t z;
+} LSM6DSO32_GyroRaw_t;
+
 /*----------------------------------------------------------------------------*/
 /* PUBLIC DRIVER API */
 /*----------------------------------------------------------------------------*/
@@ -69,6 +83,7 @@ typedef struct {
  */
 int LSM6DSO32_Init(LSM6DSO32_Handle_t *dev);
 
+void LSM6DSO32_Select(LSM6DSO32_Handle_t *dev, bool select);
 /**
  * @brief Read raw accelerometer values (X,Y,Z)
  * @param[in]  dev   Pointer to driver handle
@@ -77,6 +92,13 @@ int LSM6DSO32_Init(LSM6DSO32_Handle_t *dev);
  */
 int LSM6DSO32_ReadAccelRaw(LSM6DSO32_Handle_t *dev,
                            LSM6DSO32_AccelRaw_t *accel);
+
+int LSM6DSO32_EnableDrdyInt(LSM6DSO32_Handle_t *dev,
+                             bool on_int1, bool on_int2);
+
+int LSM6DSO32_ReadAccelGyroRaw(LSM6DSO32_Handle_t *dev,
+                               LSM6DSO32_AccelRaw_t *accel,
+                               LSM6DSO32_GyroRaw_t  *gyro);
 
 /**
  * @brief Read a device register

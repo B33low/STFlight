@@ -7,7 +7,7 @@
 /**
  * @brief Helper to set or clear the chip-select line
  */
-static inline void LPS22HB_Select(LPS22HB_Handle_t *dev, bool select)
+void LPS22HB_Select(LPS22HB_Handle_t *dev, bool select)
 {
     if (select)
     {
@@ -258,7 +258,7 @@ int LPS22HB_ReadPT_Burst(LPS22HB_Handle_t *dev, int32_t *pressure, int16_t *temp
         *pressure |= 0xFF000000;
     }
 
-    *temp = (int16_t)(rawData[4] << 8 | rawData[3]);
+    *temp = (int16_t)(rawData[4] << 8 | (rawData[3] & 0xFF));
 
     return 0;
 }

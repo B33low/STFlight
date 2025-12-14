@@ -7,7 +7,7 @@
 /**
  * @brief Helper to set or clear the chip-select line
  */
-static inline void LSM6DSO32_Select(LSM6DSO32_Handle_t *dev, bool select)
+void LSM6DSO32_Select(LSM6DSO32_Handle_t *dev, bool select)
 {
     if (select)
     {
@@ -84,6 +84,31 @@ int LSM6DSO32_WriteReg(LSM6DSO32_Handle_t *dev, uint8_t reg, const uint8_t *data
     return 0;
 }
 
+int LSM6DSO32_EnableDrdyInt(LSM6DSO32_Handle_t *dev,
+                             bool on_int1, bool on_int2)
+{
+    if (!dev) return -1;
+
+    uint8_t val;
+
+    // INT1_CTRL : bit0 = DRDY_XL, bit1 = DRDY_G
+    val = (on_int1 ? ((1u << 0) | (1u << 1)) : 0u);
+    if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_INT1_CTRL, &val, 1) != 0)
+        return -2;
+
+    // INT2_CTRL : idem si tu veux aussi sortir sur INT2
+    val = (on_int2 ? ((1u << 0) | (1u << 1)) : 0u);
+    if (LSM6DSO32_WriteReg(dev, LSM6DSO32_REG_INT2_CTRL, &val, 1) != 0)
+        return -3;
+
+    // (optionnel) config de la broche : push-pull, active high, etc.
+    // CTRL4_C bit4 = INT2_ON_INT1, bit3 = INT1_ON_INT2, bits1:0 = int polarity…
+    // Tu peux laisser par défaut si ça marche déjà avec le LPS22.
+
+    return 0;
+}
+
+
 int LSM6DSO32_Init(LSM6DSO32_Handle_t *dev)
 {
     if (!dev || !dev->hspi) {
@@ -142,6 +167,10 @@ int LSM6DSO32_Init(LSM6DSO32_Handle_t *dev)
         return -7;
     }
 
+    if (LSM6DSO32_EnableDrdyInt(dev, true, false) != 0) {
+        return -8;
+    }
+
     return 0;
 }
 
@@ -163,6 +192,31 @@ int LSM6DSO32_ReadAccelRaw(LSM6DSO32_Handle_t *dev,
     accel->x = (int16_t)((rawData[1] << 8) | rawData[0]);
     accel->y = (int16_t)((rawData[3] << 8) | rawData[2]);
     accel->z = (int16_t)((rawData[5] << 8) | rawData[4]);
+
+    return 0;
+}
+
+
+int LSM6DSO32_ReadAccelGyroRaw(LSM6DSO32_Handle_t *dev,
+                               LSM6DSO32_AccelRaw_t *accel,
+                               LSM6DSO32_GyroRaw_t  *gyro)
+{
+    if (!dev || !accel || !gyro)
+        return -1;
+
+    uint8_t raw[12] = {0};
+
+    // IF_INC = 1 -> on lit GxL..GzH puis AxL..AzH d'un coup
+    if (LSM6DSO32_ReadReg(dev, LSM6DSO32_REG_OUTX_L_G, raw, 12) != 0)
+        return -2;
+
+    gyro->x  = (int16_t)((raw[1] << 8) | raw[0]);
+    gyro->y  = (int16_t)((raw[3] << 8) | raw[2]);
+    gyro->z  = (int16_t)((raw[5] << 8) | raw[4]);
+
+    accel->x = (int16_t)((raw[7] << 8) | raw[6]);
+    accel->y = (int16_t)((raw[9] << 8) | raw[8]);
+    accel->z = (int16_t)((raw[11] << 8) | raw[10]);
 
     return 0;
 }

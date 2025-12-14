@@ -89,6 +89,8 @@ extern "C"
      */
     int LPS22HB_Init(LPS22HB_Handle_t *dev);
 
+    void LPS22HB_Select(LPS22HB_Handle_t *dev, bool select);
+    
     /**
      * @brief Read pressure value
      * @param[in]  dev   Pointer to driver handle

@@ -56,6 +56,36 @@
             ],
             /* If you use external loader, add additional arguments */
             //"serverArgs": ["--extload", "path/to/ext/loader.stldr"],
-        }
+        },{
+    "name": "HIL IMU Sim + Plot (listen)",
+    "type": "debugpy",
+    "request": "launch",
+    "cwd": "${workspaceFolder}",
+    "python": "C:/Program Files/Python313/python.exe",
+    "program": "d:/dev/STFlight/sim_pc/HIL_imu_sim_and_plot.py",
+    "args": [
+        "--mode", "listen",
+        "--port", "COM3",
+        "--baud", "115200"
+    ],
+    "console": "integratedTerminal",
+    "justMyCode": true
+},
+{
+    "name": "HIL IMU Sim + Plot (inject)",
+    "type": "debugpy",
+    "request": "launch",
+    "cwd": "${workspaceFolder}",
+    "python": "C:/Program Files/Python313/python.exe",
+    "program": "d:/dev/STFlight/sim_pc/HIL_imu_sim_and_plot.py",
+    "args": [
+        "--mode", "inject",
+        "--port", "COM3",
+        "--baud", "115200"
+    ],
+    "console": "integratedTerminal",
+    "justMyCode": true
+}
+
             ]
 }
