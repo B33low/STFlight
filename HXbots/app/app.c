@@ -19,6 +19,7 @@
 #include "attitude_state.h"
 #include "imu_params.h"
 #include "imu_stream.h"
+#include "imu_lsm6dso32.h"
 
 #include "altitude_estimator.h"
 #include "altitude_state.h"
@@ -31,6 +32,8 @@
 #define MODE_SENSOR_LPS22_DEMO 0x04
 #define MODE_SENSOR_LSM6DSO32_DEMO 0x08
 #define MODE_HIL 0x10
+
+#define US_1KHZ  1000
 
 #define MODE_SENSOR_BOARD (MODE_SENSOR_LPS22_DEMO | MODE_SENSOR_LSM6DSO32_DEMO)
 #define MODE_HXBOT_TEST (MODE_OPEN_LOOP | MODE_HIL)
@@ -61,7 +64,7 @@ static LSM6DSO32_AccelRaw_t acceleration;
 static LSM6DSO32_GyroRaw_t gyro_raw;
 static uint8_t status;
 static int lastResult;
-static char buffer[128];
+
 #endif
 
 extern UART_HandleTypeDef huart2;
@@ -71,9 +74,9 @@ static FcInput fc_in;
 static FcOutput fc_out;
 static FcDebug fc_dbg;
 
-StreamAny g_stream_imu_raw;
+ImuRawStream g_stream_imu_raw;
 
-ParamAny g_param_imu_conv;
+ParamImuConv g_param_imu_conv;
 ParamAny g_param_att_filter;
 
 StateAny g_state_attitude;
@@ -81,8 +84,8 @@ StateAny g_state_altitude;
 
 static AttEstCtx g_att_ctx;
 static AltEstCtx g_alt_ctx;
-static ImuRawSample g_imu_raw_storage[64];
 
+static ImuLsm6Ctx g_imu_lsm6_ctx;
 static uint32_t last_tick_ms = 0;
 
 /* ===================== LOG HELPERS ===================== */
@@ -254,24 +257,30 @@ void app_init(void) {
   HAL_GPIO_WritePin(CS_LSM6DSO32_GPIO_Port, CS_LSM6DSO32_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(CS_LIS2MDL_GPIO_Port, CS_LIS2MDL_Pin, GPIO_PIN_SET);
 
-  stream_any_init(&g_stream_imu_raw, g_imu_raw_storage, 64,
-                  sizeof(ImuRawSample));
-
-  state_any_init(&g_param_imu_conv.base, &g_imu_conv, sizeof(ImuConvMeta));
-  state_any_init(&g_state_attitude, &g_attitude, sizeof(Attitude));
-
-  state_any_init(&g_state_altitude, &g_altitude, sizeof(AltitudeState));
-  alt_est_init(&g_alt_ctx);
-
-  state_any_init(&g_param_att_filter.base, &g_att_filter_storage,
-                 sizeof(AttFilterParams));
-  AttFilterParams fp0 = {.alpha = 0.98f};
-  state_any_set(&g_param_att_filter.base, &fp0, 0);
-  att_est_init(&g_att_ctx);
+  // imu data services
+  imu_raw_stream_init(&g_stream_imu_raw);
+  imu_raw_param_conv_init(&g_param_imu_conv);
 
   ImuConvMeta m0 = {0};
   m0.accel_lsb_to_ms2 = 0.01f; // adjust later for real sensor if you want
   state_any_set(&g_param_imu_conv.base, &m0, 0);
+  imu_lsm6dso32_init(&g_imu_lsm6_ctx,&lsm6dso32,&g_stream_imu_raw,&g_param_imu_conv,US_1KHZ);
+
+  // attitude data services
+  state_any_init(&g_state_attitude, &g_attitude, sizeof(Attitude));
+  att_est_init(&g_att_ctx);
+  state_any_init(&g_param_att_filter.base, &g_att_filter_storage,
+                 sizeof(AttFilterParams));
+
+  AttFilterParams fp0 = {.alpha = 0.98f};
+  state_any_set(&g_param_att_filter.base, &fp0, 0);
+
+
+  // altitude data services
+  state_any_init(&g_state_altitude, &g_altitude, sizeof(AltitudeState));
+  alt_est_init(&g_alt_ctx);
+
+
 
   uart_log("=== HIL ENABLED (UART inject) ===\r\n");
   hil_uart_start_rx();
@@ -384,55 +393,8 @@ void app_loop(void) {
 /* ----------- LSM6DSO32 DEMO LOOP + STREAM FEED ----------- */
 #if (APP_MODE & MODE_SENSOR_LSM6DSO32_DEMO) == MODE_SENSOR_LSM6DSO32_DEMO
   if (lsm6dso32_data_ready) {
-    lastResult =
-        LSM6DSO32_ReadAccelGyroRaw(&lsm6dso32, &acceleration, &gyro_raw);
-    lsm6dso32_data_ready = false; // allow next interrupt
-
-    if (lastResult == 0) {
-      int16_t ax_raw = acceleration.x;
-      int16_t ay_raw = acceleration.y;
-      int16_t az_raw = acceleration.z;
-
-      int16_t gx_raw = gyro_raw.x;
-      int16_t gy_raw = gyro_raw.y;
-      int16_t gz_raw = gyro_raw.z;
-
-#if (APP_MODE & MODE_HIL) == MODE_HIL
-      /* Push raw IMU sample into the stream, like UART HIL inject */
-      ImuRawSample s;
-      s.ax = ax_raw;
-      s.ay = ay_raw;
-      s.az = az_raw;
-      s.gx = gx_raw;
-      s.gy = gy_raw;
-      s.gz = gz_raw;
-      s.t_us = now_ms * 1000u; // Maybe create a timer for microsecond accuracy later
-      stream_any_push(&g_stream_imu_raw, &s);
-#else
-
-      /* Debug logging in g/dps */
-      const float acc_sens_g = 0.244f / 1000.0f; // g / LSB
-      const float gyro_sens_dps = 0.07f;         // dps / LSB
-
-      float ax = ax_raw * acc_sens_g;
-      float ay = ay_raw * acc_sens_g;
-      float az = az_raw * acc_sens_g;
-
-      float gx = gx_raw * gyro_sens_dps;
-      float gy = gy_raw * gyro_sens_dps;
-      float gz = gz_raw * gyro_sens_dps;
-
-      int len = snprintf(buffer, sizeof(buffer),
-                         "ax=%.3f ay=%.3f az=%.3f g | "
-                         "gx=%.2f gy=%.2f gz=%.2f dps\r\n",
-                         ax, ay, az, gx, gy, gz);
-      HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, 1000);
-#endif
-    } else {
-      int len = snprintf(buffer, sizeof(buffer), "LSM6DSO32 read error: %d\r\n",
-                         lastResult);
-      HAL_UART_Transmit(&huart2, (uint8_t *)buffer, len, 1000);
-    }
+    imu_lsm6dso32_update(&g_imu_lsm6_ctx);
+    lsm6dso32_data_ready = false;
   }
 
   if (lastResult != 0) {

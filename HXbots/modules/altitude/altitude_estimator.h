@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "imu_stream.h"
+#include "imu_params.h"
 #include "stream_base.h"
 #include "param_base.h"
 #include "state_base.h"
@@ -26,6 +28,6 @@ void alt_est_init(AltEstCtx *ctx);
  * Returns true if it updated the state.
  */
 bool alt_est_step(AltEstCtx *ctx,
-                  StreamAny *imu_stream,
-                  ParamAny  *imu_meta,
+                  ImuRawStream *imu_stream,
+                  ParamImuConv  *imu_meta,
                   StateAny  *alt_state);

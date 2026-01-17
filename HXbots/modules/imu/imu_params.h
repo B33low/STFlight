@@ -1,6 +1,7 @@
 #pragma once
 
 #include "param_base.h"
+#include "state_base.h"
 typedef struct {
     float accel_lsb_to_ms2;
     float gyro_lsb_to_rads;
@@ -9,13 +10,12 @@ typedef struct {
 } ImuConvMeta;
 
 typedef struct {
-    ParamAny base;
+    StateAny base;
     ImuConvMeta storage;
 } ParamImuConv;
 
 extern ParamImuConv g_imu_conv;
 
-static inline void param_imu_conv_init(ParamImuConv *p,
-                                       ParamValidateFn v, ParamApplyFn a) {
-    param_any_init(&p->base, &p->storage, sizeof(ImuConvMeta), v, a);
+static inline void imu_raw_param_conv_init(ParamImuConv *p) {
+    state_any_init(&p->base, &p->storage, sizeof(ImuConvMeta));
 }

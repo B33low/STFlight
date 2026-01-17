@@ -75,6 +75,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     HXbots/modules/imu/imu_params.c
     HXbots/modules/imu/imu_stream.c
 
+    HXbots/modules/imu_lsm6dso32/imu_lsm6dso32.c
+
+
     HXbots/platform/stm32/comm/uart_port.c
 
 )
@@ -94,6 +97,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/modules/attitude
     ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/modules/fc
     ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/modules/imu
+    ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/modules/imu_lsm6dso32
     ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/platform/stm32/comm/
 
 )

@@ -15,7 +15,7 @@ typedef struct {
     ImuRawSample storage[64];
 } ImuRawStream;
 
-extern ImuRawStream   g_imu_raw;
+extern ImuRawStream   g_stream_imu_raw;
 
 static inline void imu_raw_stream_init(ImuRawStream *s) {
     stream_any_init(&s->base, s->storage, 64, sizeof(ImuRawSample));

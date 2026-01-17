@@ -8,7 +8,7 @@
 
 extern bool state_any_get_latest(StateAny *s, void *out_payload);
 
-static bool param_any_get_latest_copy(ParamAny *p, void *out_payload) {
+static bool param_any_get_latest_copy(ParamImuConv *p, void *out_payload) {
     if (!p) return false;
     uint32_t t_us_out;
     return state_any_get(&p->base, out_payload,&t_us_out);
@@ -22,8 +22,8 @@ void alt_est_init(AltEstCtx *ctx) {
 }
 
 bool alt_est_step(AltEstCtx *ctx,
-                  StreamAny *imu_stream,
-                  ParamAny  *imu_meta,
+                  ImuRawStream *imu_stream,
+                  ParamImuConv  *imu_meta,
                   StateAny  *alt_state)
 {
     if (!ctx || !imu_stream || !imu_meta || !alt_state) return false;
@@ -31,7 +31,7 @@ bool alt_est_step(AltEstCtx *ctx,
     ImuRawSample raw;
     ImuConvMeta  meta;
 
-    if (!stream_any_latest(imu_stream, &raw)) {
+    if (!stream_any_latest(&imu_stream->base, &raw)) {
         return false; // no IMU yet
     }
 
