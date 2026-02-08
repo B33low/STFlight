@@ -6,6 +6,7 @@ from collections import deque
 import math
 import numpy as np
 import argparse
+from serial.tools.list_ports import comports
 
 import matplotlib.pyplot as plt
 
@@ -394,9 +395,12 @@ def main():
     INJECT_PERIOD = 0.02  # 50 Hz
     PLOT_PERIOD   = 0.05  # 20 Hz
     DEBUG_PERIOD  = 0.50  # console throttle
-
-    ser = serial.Serial(port, baud, timeout=0.05)
-
+    try:
+        ser = serial.Serial(port, baud, timeout=0.05)
+    except  :
+        for port in comports():
+            print(port.device)
+        exit(1)
     stop = {"stop": False}
     lock = threading.Lock()
 

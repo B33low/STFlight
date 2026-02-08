@@ -15,18 +15,16 @@
             "servertype": "stlink",
             "device": "STM32F411RETx", //MCU used
             "interface": "swd",
-            "serialNumber": "",        //Set ST-Link ID if you use multiple at the same time
+            "serialNumber": "", //Set ST-Link ID if you use multiple at the same time
             "runToEntryPoint": "main",
             "svdFile": "${config:STM32VSCodeExtension.cubeCLT.path}/STMicroelectronics_CMSIS_SVD/STM32F411.svd",
-            "v1": false,               //Change it depending on ST Link version
+            "v1": false, //Change it depending on ST Link version
             "serverpath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",
-            "stm32cubeprogrammer":"${config:STM32VSCodeExtension.cubeCLT.path}/STM32CubeProgrammer/bin",
-            "stlinkPath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",   
+            "stm32cubeprogrammer": "${config:STM32VSCodeExtension.cubeCLT.path}/STM32CubeProgrammer/bin",
+            "stlinkPath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",
             "armToolchainPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin",
-            "gdbPath":"${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",            
-            "serverArgs": [
-                "-m","0",
-            ],
+            "gdbPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",
+            "serverArgs": ["-m", "0"]
             //"preLaunchTask": "Build + Flash"
             /* If you use external loader, add additional arguments */
             //"serverArgs": ["--extload", "path/to/ext/loader.stldr"],
@@ -42,50 +40,58 @@
             "servertype": "stlink",
             "device": "STM32F411RETx", //MCU used
             "interface": "swd",
-            "serialNumber": "",        //Set ST-Link ID if you use multiple at the same time
+            "serialNumber": "", //Set ST-Link ID if you use multiple at the same time
             "runToEntryPoint": "main",
             "svdFile": "${config:STM32VSCodeExtension.cubeCLT.path}/STMicroelectronics_CMSIS_SVD/STM32F411.svd",
-            "v1": false,               //Change it depending on ST Link version
+            "v1": false, //Change it depending on ST Link version
             "serverpath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",
-            "stm32cubeprogrammer":"${config:STM32VSCodeExtension.cubeCLT.path}/STM32CubeProgrammer/bin",
-            "stlinkPath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",   
+            "stm32cubeprogrammer": "${config:STM32VSCodeExtension.cubeCLT.path}/STM32CubeProgrammer/bin",
+            "stlinkPath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",
             "armToolchainPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin",
-            "gdbPath":"${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",            
-            "serverArgs": [
-                "-m","0",
-            ],
+            "gdbPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",
+            "serverArgs": ["-m", "0"]
             /* If you use external loader, add additional arguments */
             //"serverArgs": ["--extload", "path/to/ext/loader.stldr"],
-        },{
-    "name": "HIL IMU Sim + Plot (listen)",
-    "type": "debugpy",
-    "request": "launch",
-    "cwd": "${workspaceFolder}",
-    "python": "C:/Program Files/Python313/python.exe",
-    "program": "d:/dev/STFlight/sim_pc/HIL_imu_sim_and_plot.py",
-    "args": [
-        "--mode", "listen",
-        "--port", "COM3",
-        "--baud", "115200"
-    ],
-    "console": "integratedTerminal",
-    "justMyCode": true
-},
-{
-    "name": "HIL IMU Sim + Plot (inject)",
-    "type": "debugpy",
-    "request": "launch",
-    "cwd": "${workspaceFolder}",
-    "python": "C:/Program Files/Python313/python.exe",
-    "program": "d:/dev/STFlight/sim_pc/HIL_imu_sim_and_plot.py",
-    "args": [
-        "--mode", "inject",
-        "--port", "COM3",
-        "--baud", "115200"
-    ],
-    "console": "integratedTerminal",
-    "justMyCode": true
-}
-
-            ]
+        },
+        {
+            "name": "[Win]HIL IMU Sim + Plot (listen)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "python": ".venv/Scripts/python.exe",
+            "program": "./sim_pc/HIL_imu_sim_and_plot.py",
+            "args": ["--mode", "listen", "--port", "COM3", "--baud", "115200"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "[Mac] HIL IMU Sim + Plot (listen)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "python": ".venv/bin/python",
+            "program": "./sim_pc/HIL_imu_sim_and_plot.py",
+            "args": [
+                "--mode",
+                "listen",
+                "--port",
+                "/dev/cu.usbmodem21203",
+                "--baud",
+                "115200"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "HIL IMU Sim + Plot (inject)",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "python": "C:/Program Files/Python313/python.exe",
+            "program": "d:/dev/STFlight/sim_pc/HIL_imu_sim_and_plot.py",
+            "args": ["--mode", "inject", "--port", "COM3", "--baud", "115200"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
 }
