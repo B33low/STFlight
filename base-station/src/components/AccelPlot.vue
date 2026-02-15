@@ -11,19 +11,19 @@ import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 
 const store = useTelemetryStore()
-const { version } = storeToRefs(store)
+const { imuVersion } = storeToRefs(store)
 
-watch(version, () => {
+watch(imuVersion, () => {
     plot?.setData(buildData())
 })
-
+const WINDOW_S = 10.0;
 const root = ref<HTMLDivElement | null>(null)
 
 let plot: uPlot | null = null
 let raf = 0
 
 function buildData(): uPlot.AlignedData {
-    const w = store.ring.window()
+    const w = store.imuRing.window(4096)
 
     if (w.x.length < 2) {
         return [new Float64Array(), new Float64Array(), new Float64Array(), new Float64Array()]
@@ -32,11 +32,11 @@ function buildData(): uPlot.AlignedData {
     const ax0 = w.ax[0]
     const ay0 = w.ay[0]
     const az0 = w.az[0]
-
-    const x = Float64Array.from(w.x)
-    const ax = Float64Array.from(w.ax, v => v - ax0)
-    const ay = Float64Array.from(w.ay, v => v - ay0)
-    const az = Float64Array.from(w.az, v => v - az0)
+    const tLast = w.x[w.x.length - 1]
+    const x = Float64Array.from(w.x, v => v-tLast )
+    const ax = Float64Array.from(w.ax, v => v )
+    const ay = Float64Array.from(w.ay, v => v )
+    const az = Float64Array.from(w.az, v => v )
 
     return [x, ax, ay, az]
 }
@@ -47,7 +47,10 @@ onMounted(() => {
         width: root.value!.clientWidth,
         height: 260,
         scales: {
-            x: { time: false }, // ✅ plus de 1970
+            x: {
+        time: false,
+        range: () => [-WINDOW_S, 0],   // always show [-W, 0]
+      },
         },
         series: [
             {},
@@ -66,7 +69,7 @@ onBeforeUnmount(() => {
     plot = null
 })
 
-watch(() => store.version, () => {
+watch(() => store.imuVersion, () => {
     plot?.setData(buildData())
 })
 

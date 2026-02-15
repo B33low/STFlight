@@ -14,9 +14,16 @@
     </div>
 
     <div>
-      <ImuPlot />
+      <AccelPlot />
     </div>
 
+    
+    <div>
+      <GyroPlot />
+    </div>
+    <div>
+      <Attitude3D />
+    </div>
     <pre>{{ store.stats }}</pre>
   </div>
 </template>
@@ -24,9 +31,11 @@
 <script setup lang="ts">
 import { onMounted, ref  } from 'vue'
 import { invoke, Channel } from '@tauri-apps/api/core'
-import ImuPlot from './components/ImuPlot.vue'
+import AccelPlot from './components/AccelPlot.vue'
+import GyroPlot from './components/GyroPlot.vue'
 import { useTelemetryStore } from './stores/telemetry'
-
+import Attitude3D from './components/Attitude3D.vue'
+import { startTelemetryStream } from "./services/telemetryStream"
 type PortInfo = { name: string }
 
 type TelemetryEvent =
@@ -41,6 +50,8 @@ const baud = ref(115200)
 const uiHz = ref(60)
 
 let ch: Channel<TelemetryEvent> | null = null
+
+let disconnectTelemetry: (() => Promise<void>) | null = null
 
 async function refreshPorts() {
   ports.value = await invoke<PortInfo[]>('list_ports')
@@ -58,17 +69,13 @@ async function start() {
       Object.assign(store.stats, msg.data)
     }
   }
-
-  await invoke('start_imu_stream', {
-  port: selectedPort.value,
-  baud: baud.value,
-  uiHz: uiHz.value,
-  onEvent: ch,
-})
+  disconnectTelemetry = await startTelemetryStream(selectedPort.value,baud.value,uiHz.value)
 }
 
 async function stop() {
-  await invoke('stop_imu_stream')
+  if (disconnectTelemetry){
+    disconnectTelemetry()
+  }
   ch = null
 }
 

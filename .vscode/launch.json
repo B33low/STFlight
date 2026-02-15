@@ -24,7 +24,10 @@
             "stlinkPath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",
             "armToolchainPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin",
             "gdbPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",
-            "serverArgs": ["-m", "0"]
+            "serverArgs": [
+                "-m",
+                "0"
+            ]
             //"preLaunchTask": "Build + Flash"
             /* If you use external loader, add additional arguments */
             //"serverArgs": ["--extload", "path/to/ext/loader.stldr"],
@@ -49,7 +52,10 @@
             "stlinkPath": "${config:STM32VSCodeExtension.cubeCLT.path}/STLink-gdb-server/bin/ST-LINK_gdbserver",
             "armToolchainPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin",
             "gdbPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",
-            "serverArgs": ["-m", "0"]
+            "serverArgs": [
+                "-m",
+                "0"
+            ]
             /* If you use external loader, add additional arguments */
             //"serverArgs": ["--extload", "path/to/ext/loader.stldr"],
         },
@@ -60,7 +66,14 @@
             "cwd": "${workspaceFolder}",
             "python": ".venv/Scripts/python.exe",
             "program": "./sim_pc/HIL_imu_sim_and_plot.py",
-            "args": ["--mode", "listen", "--port", "COM3", "--baud", "115200"],
+            "args": [
+                "--mode",
+                "listen",
+                "--port",
+                "COM3",
+                "--baud",
+                "115200"
+            ],
             "console": "integratedTerminal",
             "justMyCode": true
         },
@@ -89,9 +102,44 @@
             "cwd": "${workspaceFolder}",
             "python": "C:/Program Files/Python313/python.exe",
             "program": "d:/dev/STFlight/sim_pc/HIL_imu_sim_and_plot.py",
-            "args": ["--mode", "inject", "--port", "COM3", "--baud", "115200"],
+            "args": [
+                "--mode",
+                "inject",
+                "--port",
+                "COM3",
+                "--baud",
+                "115200"
+            ],
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Tauri Development Debug",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--manifest-path=${workspaceFolder}/base-station/src-tauri/Cargo.toml",
+                    "--no-default-features"
+                ]
+            },
+            // task for the `beforeDevCommand` if used, must be configured in `.vscode/tasks.json`
+            "preLaunchTask": "ui:dev"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Tauri Production Debug",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--release",
+                    "--manifest-path=${workspaceFolder}/base-station/src-tauri/Cargo.toml"
+                ]
+            },
+            // task for the `beforeBuildCommand` if used, must be configured in `.vscode/tasks.json`
+            "preLaunchTask": "ui:build"
         }
     ]
 }
