@@ -1,4 +1,7 @@
-use crate::{protocol::Frame, telemetry::{Stats, TelemetryEvent}};
+use crate::{
+    protocol::Frame,
+    telemetry::{Stats, TelemetryEvent},
+};
 
 pub trait Processor: Send {
     fn on_frame(&mut self, f: &Frame, pc_us: u64);
@@ -6,5 +9,6 @@ pub trait Processor: Send {
     fn add_stats(&self, out: &mut Stats);
 }
 
-pub mod imu;
 pub mod attitude;
+pub mod gyro_setpoint;
+pub mod imu;

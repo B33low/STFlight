@@ -4,9 +4,12 @@ use tauri::ipc::Channel;
 use tokio_util::sync::CancellationToken;
 
 use crate::{
+    processors::{
+        attitude::AttitudeProcessor, gyro_setpoint::GyroSetpointProcessor, imu::ImuProcessor,
+        Processor,
+    },
     protocol::BusFrameParser,
     telemetry::{PortInfo, Stats, TelemetryEvent},
-    processors::{Processor, imu::ImuProcessor, attitude::AttitudeProcessor},
 };
 
 #[derive(Default)]
@@ -17,7 +20,10 @@ pub struct StreamState {
 #[tauri::command]
 pub fn list_ports() -> Result<Vec<PortInfo>, String> {
     let ports = tokio_serial::available_ports().map_err(|e| e.to_string())?;
-    Ok(ports.into_iter().map(|p| PortInfo { name: p.port_name }).collect())
+    Ok(ports
+        .into_iter()
+        .map(|p| PortInfo { name: p.port_name })
+        .collect())
 }
 
 #[tauri::command]
@@ -68,6 +74,7 @@ async fn run_stream(
     let mut procs: Vec<Box<dyn Processor>> = vec![
         Box::new(ImuProcessor::new()),
         Box::new(AttitudeProcessor::new("rad")), // or "deg"
+        Box::new(GyroSetpointProcessor::new()),  // or "deg"
     ];
 
     let mut frames_total: u64 = 0;
@@ -95,6 +102,8 @@ async fn run_stream(
                     imu_bad_len: 0,
                     att_ok: 0,
                     att_bad_len: 0,
+                    gyro_setpoint_ok: 0,
+                    gyro_setpoint_bad_len: 0,
                 };
                 for p in procs.iter() {
                     p.add_stats(&mut s);

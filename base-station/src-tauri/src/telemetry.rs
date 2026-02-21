@@ -6,7 +6,7 @@ pub struct PortInfo {
     pub name: String,
 }
 
-#[derive(Clone, Serialize,Default)]
+#[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ImuChunk {
     pub pc_us: Vec<u64>,
@@ -19,7 +19,17 @@ pub struct ImuChunk {
     pub gz: Vec<i16>,
 }
 
-#[derive(Clone, Serialize,Default)]
+#[derive(Clone, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct GyroSetpointChunk {
+    pub pc_us: Vec<u64>,
+    pub t_us: Vec<i16>,
+    pub rx: Vec<i16>,
+    pub ry: Vec<i16>,
+    pub rz: Vec<i16>,
+}
+
+#[derive(Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct AttitudeChunk {
     pub pc_us: Vec<u64>,
@@ -40,6 +50,9 @@ pub struct Stats {
 
     pub att_ok: u64,
     pub att_bad_len: u64,
+
+    pub gyro_setpoint_ok: u64,
+    pub gyro_setpoint_bad_len: u64,
 }
 
 #[derive(Clone, Serialize)]
@@ -47,5 +60,6 @@ pub struct Stats {
 pub enum TelemetryEvent {
     ImuRawChunk(ImuChunk),
     AttitudeChunk(AttitudeChunk),
+    GyroSetpointChunk(GyroSetpointChunk),
     Stats(Stats),
 }
