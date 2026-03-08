@@ -69,6 +69,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     HXbots/modules/attitude/attitude_state.c
     HXbots/modules/attitude/attitude_estimator.c
     HXbots/modules/attitude/att_filter_params.c
+    HXbots/modules/gyro_rate/gyro_setpoint_state.c
 
     HXbots/modules/fc/fc.c
 
@@ -99,7 +100,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/modules/imu
     ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/modules/imu_lsm6dso32
     ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/platform/stm32/comm/
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/HXbots/modules/gyro_rate
 )
 
 # Add project symbols (macros)

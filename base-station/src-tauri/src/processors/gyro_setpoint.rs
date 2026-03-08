@@ -19,9 +19,9 @@ const GYRO_SETPOINT_SIZE: usize = 6;
 
 #[derive(Debug, Clone, Copy)]
 struct GyroSetpoint {
-    rx: i16,
-    ry: i16,
-    rz: i16,
+    gx: i16,
+    gy: i16,
+    gz: i16,
 }
 
 fn parse_gyro_setpoint(payload: &[u8]) -> Option<GyroSetpoint> {
@@ -30,9 +30,9 @@ fn parse_gyro_setpoint(payload: &[u8]) -> Option<GyroSetpoint> {
     }
     let mut rdr = Cursor::new(payload);
     Some(GyroSetpoint {
-        rx: rdr.read_i16::<LittleEndian>().ok()?,
-        ry: rdr.read_i16::<LittleEndian>().ok()?,
-        rz: rdr.read_i16::<LittleEndian>().ok()?,
+        gx: rdr.read_i16::<LittleEndian>().ok()?,
+        gy: rdr.read_i16::<LittleEndian>().ok()?,
+        gz: rdr.read_i16::<LittleEndian>().ok()?,
     })
 }
 
@@ -51,9 +51,9 @@ impl GyroSetpointProcessor {
             chunk: GyroSetpointChunk {
                 pc_us: vec![],
                 t_us: vec![],
-                rx: vec![],
-                ry: vec![],
-                rz: vec![],
+                gx: vec![],
+                gy: vec![],
+                gz: vec![],
             },
         }
     }
@@ -69,9 +69,10 @@ impl Processor for GyroSetpointProcessor {
                 Some(a) => {
                     self.ok += 1;
                     self.chunk.pc_us.push(pc_us);
-                    self.chunk.rx.push(a.rx);
-                    self.chunk.ry.push(a.ry);
-                    self.chunk.rz.push(a.rz);
+                    self.chunk.t_us.push((pc_us & 0xFFFFFFFF) as u32);
+                    self.chunk.gx.push(a.gx);
+                    self.chunk.gy.push(a.gy);
+                    self.chunk.gz.push(a.gz);
                 }
                 None => self.bad_len += 1,
             }
@@ -87,9 +88,9 @@ impl Processor for GyroSetpointProcessor {
             GyroSetpointChunk {
                 pc_us: vec![],
                 t_us: vec![],
-                rx: vec![],
-                ry: vec![],
-                rz: vec![],
+                gx: vec![],
+                gy: vec![],
+                gz: vec![],
             },
         );
         Some(TelemetryEvent::GyroSetpointChunk(send))

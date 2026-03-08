@@ -36,11 +36,11 @@ function buildData(): uPlot.AlignedData {
 
     const tLast = w.x[w.x.length - 1];
     const x = Float64Array.from(w.x, (v) => v - tLast);
-    const rx = Float64Array.from(w.rx, (v) => v);
-    const ry = Float64Array.from(w.ry, (v) => v);
-    const rz = Float64Array.from(w.rz, (v) => v);
+    const gx = Float64Array.from(w.gx, (v) => v);
+    const gy = Float64Array.from(w.gy, (v) => v);
+    const gz = Float64Array.from(w.gz, (v) => v);
 
-    return [x, rx, ry, rz];
+    return [x, gx, gy, gz];
 }
 
 onMounted(() => {
@@ -56,9 +56,9 @@ onMounted(() => {
             },
             series: [
                 {},
-                { label: "rx", stroke: "#d00", width: 2 },
-                { label: "ry", stroke: "#0a0", width: 2 },
-                { label: "rz", stroke: "#00a", width: 2 },
+                { label: "gx", stroke: "#d00", width: 2 },
+                { label: "gy", stroke: "#0a0", width: 2 },
+                { label: "gz", stroke: "#00a", width: 2 },
             ],
         },
         buildData(),

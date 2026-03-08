@@ -23,10 +23,10 @@ pub struct ImuChunk {
 #[serde(rename_all = "camelCase")]
 pub struct GyroSetpointChunk {
     pub pc_us: Vec<u64>,
-    pub t_us: Vec<i16>,
-    pub rx: Vec<i16>,
-    pub ry: Vec<i16>,
-    pub rz: Vec<i16>,
+    pub t_us: Vec<u32>,
+    pub gx: Vec<i16>,
+    pub gy: Vec<i16>,
+    pub gz: Vec<i16>,
 }
 
 #[derive(Clone, Serialize, Default)]

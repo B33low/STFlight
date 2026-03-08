@@ -14,9 +14,9 @@ export type ImuChunk = {
 }
 
 export type GyroSetpointChunk = {
-    tUs: number[]
     pcUs: number[]
-    rx: number[]; ry: number[]; rz: number[]
+    tUs: number[]
+    gx: number[]; gy: number[]; gz: number[]
 }
 
 
@@ -155,9 +155,9 @@ class GyroSetpointRing {
     private lastT = -Infinity
 
     t: number[] = []
-    rx: number[] = []
-    ry: number[] = []
-    rz: number[] = []
+    gx: number[] = []
+    gy: number[] = []
+    gz: number[] = []
 
     constructor(capacity: number) {
         this.cap = capacity
@@ -166,7 +166,7 @@ class GyroSetpointRing {
     pushChunk(c: GyroSetpointChunk) {
         const n = Math.min(
             c.pcUs.length,
-            c.rx.length, c.ry.length, c.rz.length,
+            c.gx.length, c.gy.length, c.gz.length,
         )
         if (n <= 0) return
 
@@ -176,23 +176,23 @@ class GyroSetpointRing {
             this.lastT = t
 
             this.t.push(t)
-            this.rx.push(c.rx[i])
-            this.ry.push(c.ry[i])
-            this.rz.push(c.rz[i])
+            this.gx.push(c.gx[i])
+            this.gy.push(c.gy[i])
+            this.gz.push(c.gz[i])
         }
 
         const extra = this.t.length - this.cap
         if (extra > 0) {
             this.t.splice(0, extra)
-            this.rx.splice(0, extra)
-            this.ry.splice(0, extra)
-            this.rz.splice(0, extra)
+            this.gx.splice(0, extra)
+            this.gy.splice(0, extra)
+            this.gz.splice(0, extra)
         }
     }
 
     window(count: number, xSecMode: "fromFirst" | "nowRight" = "fromFirst") {
         const n = this.t.length
-        if (n === 0) return { x: [], rx: [], ry: [], rz: [] }
+        if (n === 0) return { x: [], gx: [], gy: [], gz: [] }
 
         const start = Math.max(n - Math.floor(count), 0)
         const tSlice = this.t.slice(start)
@@ -208,9 +208,9 @@ class GyroSetpointRing {
 
         return {
             x,
-            ax: this.rx.slice(start),
-            ay: this.ry.slice(start),
-            az: this.rz.slice(start),
+            gx: this.gx.slice(start),
+            gy: this.gy.slice(start),
+            gz: this.gz.slice(start),
         }
     }
 
@@ -219,9 +219,9 @@ class GyroSetpointRing {
         if (n === 0) return null
         return {
             pcUs: this.t[n - 1],
-            rx: this.rx[n - 1],
-            ry: this.ry[n - 1],
-            rz: this.rz[n - 1],
+            gx: this.gx[n - 1],
+            gy: this.gy[n - 1],
+            gz: this.gz[n - 1],
         }
     }
 }
@@ -257,7 +257,7 @@ export const useTelemetryStore = defineStore("telemetry", () => {
     } | null>(null)
 
     const latestGyroSetpoint = ref<{
-        pcUs: number; rx: number; ry: number; rz: number
+        pcUs: number; gx: number; gy: number; gz: number
     } | null>(null)
 
     const attitudeEuler = shallowRef<AttitudeEulerSample | null>(null)
