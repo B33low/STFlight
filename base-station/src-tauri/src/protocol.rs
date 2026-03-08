@@ -23,17 +23,17 @@ enum St {
 #[repr(u8)]
 #[derive(Debug, Clone, Copy,PartialEq)]
 pub enum MsgType {
-    BusMsgPublish,
-    BusMsgWrite,
-    BusMsgInject,
-    BusMsgReadReq,
+    BusMsgPublish = 1,
+    BusMsgWrite = 2,
+    BusMsgInject = 3,
+    BusMsgReadReq = 4,
 }
 #[repr(u8)]
 #[derive(Debug, Clone, Copy,PartialEq)]
 pub enum MsgKind {
-    BusKindState,
-    BusKindParam,
-    BusKindStream,
+    BusKindState = 1,
+    BusKindParam = 2,
+    BusKindStream = 3,
 }
 
 
@@ -146,4 +146,15 @@ impl BusFrameParser {
 
         frames
     }
+}
+
+/// Serialize a frame to bytes: [AA 55 msg kind id len payload...]
+pub fn frame_to_bytes(msg: MsgType, kind: MsgKind, id: u8, payload: &[u8]) -> Vec<u8> {
+    let msg_u8 = msg as u8;
+    let kind_u8 = kind as u8;
+    let len = payload.len() as u8;
+    
+    let mut result = vec![AA, BB, msg_u8, kind_u8, id, len];
+    result.extend_from_slice(payload);
+    result
 }

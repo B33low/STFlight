@@ -13,6 +13,7 @@ pub fn run() {
             serial_manager::list_ports,
             serial_manager::start_telemetry_stream,
             serial_manager::stop_telemetry_stream,
+            serial_manager::inject_gyro_setpoint,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

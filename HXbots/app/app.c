@@ -174,6 +174,19 @@ static bool hil_apply_frame(uint8_t msg_u8, uint8_t kind_u8, uint8_t id,
 
     if (kind == BUS_KIND_STATE)
     {
+        // Log gyro setpoint injections
+        if (id == 5) // ID_GYRO_SETPOINT_STATE
+        {
+            if (len >= 6)
+            {
+                int16_t gx = ((int16_t)payload[0]) | (((int16_t)payload[1]) << 8);
+                int16_t gy = ((int16_t)payload[2]) | (((int16_t)payload[3]) << 8);
+                int16_t gz = ((int16_t)payload[4]) | (((int16_t)payload[5]) << 8);
+                char msg[64];
+                sprintf(msg, "[HIL] Gyro SP: gx=%d gy=%d gz=%d\r\n", gx, gy, gz);
+                uart_log(msg);
+            }
+        }
         state_any_set((StateAny *)it->ptr, payload, now_us);
         return true;
     }
@@ -410,6 +423,13 @@ void app_loop(void)
                  &g_state_altitude);
     att_est_step(&g_att_ctx, &g_stream_imu_raw, &g_param_imu_conv,
                  &g_param_att_filter, &g_state_attitude);
+    
+    // Optional: Use injected gyro setpoint for rate control
+    // GyroSetpointState gyro_sp = {0};
+    // state_gyro_setpoint_get(&g_state_gyro_setpoint, &gyro_sp, NULL);
+    // fc_in.rate_setpoint_x = gyro_sp.gx * 0.001f;  // Convert to rad/s
+    // fc_in.rate_setpoint_y = gyro_sp.gy * 0.001f;
+    // fc_in.rate_setpoint_z = gyro_sp.gz * 0.001f;
 #endif
 
 #if (APP_MODE & MODE_OPEN_LOOP) == MODE_OPEN_LOOP

@@ -22,6 +22,23 @@
             <button @click="refreshPorts">Refresh ports</button>
         </div>
 
+        <div
+            style="
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: center;
+                padding: 8px;
+                border: 1px solid #ccc;
+            "
+        >
+            <label>Gyro Setpoint Inject:</label>
+            <input v-model.number="gyroSetpoint.gx" type="number" placeholder="gx" style="width: 80px" />
+            <input v-model.number="gyroSetpoint.gy" type="number" placeholder="gy" style="width: 80px" />
+            <input v-model.number="gyroSetpoint.gz" type="number" placeholder="gz" style="width: 80px" />
+            <button @click="injectGyroSetpoint">Inject</button>
+        </div>
+
         <div>
             <AccelPlot />
         </div>
@@ -65,6 +82,8 @@ const selectedPort = ref("COM3");
 const baud = ref(115200);
 const uiHz = ref(60);
 
+const gyroSetpoint = ref({ gx: 0, gy: 0, gz: 0 });
+
 let ch: Channel<TelemetryEvent> | null = null;
 
 let disconnectTelemetry: (() => Promise<void>) | null = null;
@@ -100,6 +119,23 @@ async function stop() {
         disconnectTelemetry();
     }
     ch = null;
+}
+
+async function injectGyroSetpoint() {
+    try {
+        console.log(`[Inject] Sending gyro setpoint: gx=${gyroSetpoint.value.gx}, gy=${gyroSetpoint.value.gy}, gz=${gyroSetpoint.value.gz} to ${selectedPort.value}@${baud.value}`);
+        await invoke("inject_gyro_setpoint", {
+            port: selectedPort.value,
+            baud: baud.value,
+            gx: gyroSetpoint.value.gx,
+            gy: gyroSetpoint.value.gy,
+            gz: gyroSetpoint.value.gz,
+        });
+        console.log("[Inject] Success!");
+    } catch (e) {
+        console.error("[Inject] Failed:", e);
+        alert(`Injection failed: ${e}`);
+    }
 }
 
 onMounted(refreshPorts);

@@ -64,7 +64,14 @@ def name_for(kind, id_):
         return "ATTITUDE"
     if kind == BUS_KIND_STATE and id_ == 4:
         return "ALTITUDE"
+    if kind == BUS_KIND_STATE and id_ == 5:
+        return "GYRO_SETPOINT"
     return ""
+
+
+def pack_gyro_setpoint(gx, gy, gz):
+    """Pack gyro setpoint into 6 bytes: 3 x int16_t (little-endian)"""
+    return struct.pack("<hhh", gx, gy, gz)
 
 
 # ---------------- Frame parser ----------------
@@ -209,6 +216,9 @@ def main():
             return 32767
         return xi
 
+    # Track when to send gyro setpoint
+    last_gyro_setpoint_tx = 0.0
+
     try:
         while True:
             elapsed_s = time.perf_counter() - start
@@ -251,6 +261,19 @@ def main():
             print(f"[TX] INJECT STREAM id={ID_IMU_RAW} IMU_RAW "
                   f"ax={int(ax)} ay={int(ay)} az={int(az)} "
                   f"gy={int(gy)} t_us={t_us}")
+
+            # Send gyro setpoint every 500ms
+            if elapsed_s - last_gyro_setpoint_tx >= 0.5:
+                last_gyro_setpoint_tx = elapsed_s
+                
+                # Inject gyro setpoint: gx=0, gy=desired_rate, gz=0
+                gyro_sp_payload = pack_gyro_setpoint(
+                    gx=clamp_i16(gx),
+                    gy=clamp_i16(gy),
+                    gz=clamp_i16(gz)
+                )
+                send_frame(ser, BUS_MSG_INJECT, BUS_KIND_STATE, 5, gyro_sp_payload)  # ID 5 = GYRO_SETPOINT
+                print(f"[TX] INJECT STATE id=5 GYRO_SETPOINT gx={int(gx)} gy={int(gy)} gz={int(gz)}")
 
             time.sleep(0.1)
 
